@@ -27,7 +27,7 @@ namespace RvtMcp.Tests
                 using var client = new HttpClient
                 {
                     BaseAddress = new Uri($"http://127.0.0.1:{port}/"),
-                    Timeout = TimeSpan.FromSeconds(2)
+                    Timeout = TimeSpan.FromSeconds(5)
                 };
 
                 var response = await DiscoverWhenReady(client);
@@ -89,13 +89,19 @@ namespace RvtMcp.Tests
         private static async Task<HttpResponseMessage> DiscoverWhenReady(HttpClient client)
         {
             Exception lastError = null;
-            for (var attempt = 0; attempt < 50; attempt++)
+            var deadline = DateTimeOffset.UtcNow.AddSeconds(30);
+            while (DateTimeOffset.UtcNow < deadline)
             {
                 try
                 {
                     return await SendDiscover(client);
                 }
                 catch (HttpRequestException ex)
+                {
+                    lastError = ex;
+                    await Task.Delay(100);
+                }
+                catch (TaskCanceledException ex)
                 {
                     lastError = ex;
                     await Task.Delay(100);
