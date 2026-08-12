@@ -12,16 +12,16 @@
   <PropertyGroup>
     <IsPackable>true</IsPackable>
     <PackAsTool>true</PackAsTool>
-    <ToolCommandName>rvt-mcp</ToolCommandName>
-    <PackageId>RvtMcp.Server</PackageId>
-    <Version>0.6.0</Version>
+    <ToolCommandName>cria-revit-mcp</ToolCommandName>
+    <PackageId>Cria.RevitMcp.Server</PackageId>
+    <Version>0.1.0</Version>
     <Authors>Khoa Le</Authors>
-    <Description>MCP gateway for Autodesk Revit 2022-2027 — expose the Revit API as AI-callable tools with progressive disclosure (toolset gating), a Transaction-safe batch_execute, and a ToolBaker self-evolution engine. Pair with the Revit plugin distributed on GitHub Releases.</Description>
-    <PackageProjectUrl>https://github.com/bimwright/rvt-mcp</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/bimwright/rvt-mcp</RepositoryUrl>
+    <Description>Local-first, stateless MCP gateway for Autodesk Revit. Initially runtime-tested with Revit 2026 while preserving the upstream multi-version build matrix.</Description>
+    <PackageProjectUrl>https://github.com/ParkerCai/cria-revit-mcp</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/ParkerCai/cria-revit-mcp</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
-    <PackageTags>mcp;revit;bim;ai</PackageTags>
+    <PackageTags>mcp;revit;bim;ai;stateless</PackageTags>
     <Copyright>Copyright 2026 Khoa Le</Copyright>
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
@@ -48,8 +48,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="ModelContextProtocol" Version="1.1.0" />
-    <PackageReference Include="ModelContextProtocol.AspNetCore" Version="1.1.0" />
+    <PackageReference Include="ModelContextProtocol" Version="2.1.0" />
+    <PackageReference Include="ModelContextProtocol.AspNetCore" Version="2.1.0" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.11" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />

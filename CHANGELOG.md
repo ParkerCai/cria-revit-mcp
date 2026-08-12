@@ -1,5 +1,32 @@
 ﻿# Changelog
 
+## Cria 0.1.0 - Stateless MCP foundation
+
+### Added
+
+- MCP C# SDK 2.1 with MCP `2026-07-28` stateless discovery.
+- Stateless Streamable HTTP on loopback and stateless stdio discovery.
+- `read-only`, `safe-authoring`, and `developer` safety profiles; `safe-authoring` is the default.
+- Cria product, server, command, package, and repository identity.
+- Protocol, server-metadata, and safety-profile integration tests.
+- Provider-neutral English tool-routing benchmark for GPT-5.6 Terra, GPT-5.6 Luna, Gemini 3.6 Flash, and optional legacy Haiku comparison.
+
+### Changed
+
+- Revit 2026 is the initial runtime target. The inherited Revit 2022-2027 project matrix remains in source and CI.
+- ToolBaker and arbitrary C# are no longer exposed by default.
+- Inherited installer, package publishing, registry, and localized documentation are excluded until they are redesigned for Cria.
+
+### Validation
+
+- 363 .NET tests pass.
+- Release server build passes without warnings.
+- Revit 2026 plugin release build passes with deployment disabled.
+
+## Upstream history
+
+The entries below predate the Cria fork and are retained as upstream history. See [UPSTREAM.md](UPSTREAM.md).
+
 ## v0.6.0 - Toast, privacy journal, Status flags, KEI tools, README refresh
 
 ### Added

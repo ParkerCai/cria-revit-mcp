@@ -64,6 +64,15 @@ namespace RvtMcp.Tests
         }
 
         [Fact]
+        public void ApplyCliArgs_ProfileConsumesNext()
+        {
+            var config = new RvtMcpConfig();
+            RvtMcpConfig.ApplyCliArgs(config, new[] { "--profile", "developer" });
+            Assert.Equal("developer", config.Profile);
+            Assert.True(config.EnableToolbakerOrDefault);
+        }
+
+        [Fact]
         public void ApplyCliArgs_ToolsetsParsedAsCsv()
         {
             var config = new RvtMcpConfig();
@@ -130,6 +139,7 @@ namespace RvtMcp.Tests
             RvtMcpConfig.ApplyEnvVars(config, EnvLookup(new Dictionary<string, string>
             {
                 [RvtMcpConfig.EnvTarget] = "2027",
+                [RvtMcpConfig.EnvProfile] = "read-only",
                 [RvtMcpConfig.EnvToolsets] = "query,create",
                 [RvtMcpConfig.EnvReadOnly] = "true",
                 [RvtMcpConfig.EnvAllowLanBind] = "1",
@@ -139,6 +149,7 @@ namespace RvtMcp.Tests
                 [RvtMcpConfig.EnvEnableToast] = "true",
             }));
             Assert.Equal("2027", config.Target);
+            Assert.Equal("read-only", config.Profile);
             Assert.Equal(new[] { "query", "create" }, config.Toolsets);
             Assert.True(config.ReadOnly);
             Assert.True(config.AllowLanBind);
@@ -255,7 +266,8 @@ namespace RvtMcp.Tests
             Assert.Null(config.Toolsets);
             Assert.False(config.ReadOnlyOrDefault);
             Assert.False(config.AllowLanBindOrDefault);
-            Assert.True(config.EnableToolbakerOrDefault); // default ON per aspect #5
+            Assert.Equal("safe-authoring", config.ProfileOrDefault);
+            Assert.False(config.EnableToolbakerOrDefault);
             Assert.False(config.EnableAdaptiveBakeOrDefault);
             Assert.False(config.CacheSendCodeBodiesOrDefault);
             Assert.False(config.EnableToastOrDefault);
@@ -269,7 +281,7 @@ namespace RvtMcp.Tests
             var config = new RvtMcpConfig();
             Assert.False(config.ReadOnlyOrDefault);
             Assert.False(config.AllowLanBindOrDefault);
-            Assert.True(config.EnableToolbakerOrDefault);
+            Assert.False(config.EnableToolbakerOrDefault);
             Assert.False(config.EnableAdaptiveBakeOrDefault);
             Assert.False(config.CacheSendCodeBodiesOrDefault);
             Assert.False(config.EnableToastOrDefault);

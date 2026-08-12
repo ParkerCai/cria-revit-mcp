@@ -19,6 +19,7 @@ namespace RvtMcp.Plugin
     /// </summary>
     public class RvtMcpConfig
     {
+        public const string EnvProfile                   = "CRIA_PROFILE";
         public const string EnvTarget                    = "BIMWRIGHT_TARGET";
         public const string EnvToolsets                  = "BIMWRIGHT_TOOLSETS";
         public const string EnvReadOnly                  = "BIMWRIGHT_READ_ONLY";
@@ -30,13 +31,21 @@ namespace RvtMcp.Plugin
         public const string EnvPersistSendCodeBodies     = "BIMWRIGHT_PERSIST_SEND_CODE_BODIES";
         public const string EnvPersistSendCodeBodiesTtl  = "BIMWRIGHT_PERSIST_SEND_CODE_BODIES_TTL";
 
+        public const string ProfileReadOnly                = "read-only";
+        public const string ProfileSafeAuthoring           = "safe-authoring";
+        public const string ProfileDeveloper               = "developer";
+        public const string DefaultProfile                 = ProfileSafeAuthoring;
+
         public const bool DefaultReadOnly                  = false;
         public const bool DefaultAllowLanBind              = false;
-        public const bool DefaultEnableToolbaker           = true;
+        public const bool DefaultEnableToolbaker           = false;
         public const bool DefaultEnableAdaptiveBake        = false;
         public const bool DefaultCacheSendCodeBodies       = false;
         public const bool DefaultEnableToast               = false;
         public const bool DefaultPersistSendCodeBodies     = false;
+
+        [JsonProperty("profile")]
+        public string Profile { get; set; }
 
         [JsonProperty("target")]
         public string Target { get; set; }
@@ -75,9 +84,13 @@ namespace RvtMcp.Plugin
         [JsonProperty("persistSendCodeBodiesRequiresExplicitEnable")]
         public bool? PersistSendCodeBodiesRequiresExplicitEnable { get; set; }
 
-        public bool ReadOnlyOrDefault              => ReadOnly           ?? DefaultReadOnly;
+        public string ProfileOrDefault             => NormalizeProfile(Profile);
+        public bool ReadOnlyOrDefault              => ReadOnly == true || ProfileOrDefault == ProfileReadOnly;
         public bool AllowLanBindOrDefault          => AllowLanBind       ?? DefaultAllowLanBind;
-        public bool EnableToolbakerOrDefault       => EnableToolbaker    ?? DefaultEnableToolbaker;
+        public bool EnableToolbakerOrDefault       => EnableToolbaker
+                                                       ?? (ProfileOrDefault == ProfileDeveloper
+                                                           ? true
+                                                           : DefaultEnableToolbaker);
         public bool EnableAdaptiveBakeOrDefault    => EnableAdaptiveBake ?? DefaultEnableAdaptiveBake;
         public bool CacheSendCodeBodiesOrDefault  => CacheSendCodeBodies ?? DefaultCacheSendCodeBodies;
         public bool EnableToastOrDefault          => EnableToast       ?? DefaultEnableToast;
@@ -159,6 +172,9 @@ namespace RvtMcp.Plugin
         {
             lookup = lookup ?? Environment.GetEnvironmentVariable;
 
+            var profile = lookup(EnvProfile);
+            if (!string.IsNullOrWhiteSpace(profile)) config.Profile = profile.Trim();
+
             var target = lookup(EnvTarget);
             if (!string.IsNullOrWhiteSpace(target)) config.Target = target.Trim();
 
@@ -233,6 +249,9 @@ namespace RvtMcp.Plugin
                 var arg = args[i];
                 switch (arg)
                 {
+                    case "--profile":
+                        if (i + 1 < args.Length) config.Profile = args[++i];
+                        break;
                     case "--target":
                         if (i + 1 < args.Length) config.Target = args[++i];
                         break;
@@ -322,6 +341,22 @@ namespace RvtMcp.Plugin
                 default:
                     return null;
             }
+        }
+
+        public static bool IsKnownProfile(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value)) return true;
+            var normalized = value.Trim().ToLowerInvariant();
+            return normalized == ProfileReadOnly
+                   || normalized == ProfileSafeAuthoring
+                   || normalized == ProfileDeveloper;
+        }
+
+        public static string NormalizeProfile(string value)
+        {
+            if (!IsKnownProfile(value) || string.IsNullOrWhiteSpace(value))
+                return DefaultProfile;
+            return value.Trim().ToLowerInvariant();
         }
 
         internal static List<string> ParseCsv(string value)

@@ -1,36 +1,69 @@
-# Haiku benchmark — bimwright weak-model regression check
+# Cross-provider tool-routing benchmark
 
-This folder holds the benchmark procedure and run history for detecting weak-model (Haiku 4.5) parameter-accuracy drift as the MCP tool surface evolves.
+This folder tests whether a model can select the correct Cria Revit MCP tools and produce valid arguments from the same synthetic Revit requests. The benchmark is independent of any model vendor, agent product, or API transport.
+
+The inherited benchmark used Claude Haiku as a weak-model stress test. That was useful for exposing unclear tool descriptions, but the runner was tied to Claude Code and the test requests were not in the language used by this project. Haiku is now an optional legacy comparator, not the benchmark identity.
+
+## Default model matrix
+
+The exact machine-readable registry is in `models.json`.
+
+| Provider | Model ID | Default | Purpose |
+|---|---|---:|---|
+| OpenAI | `gpt-5.6-terra` | Yes | Balanced quality and cost |
+| OpenAI | `gpt-5.6-luna` | Yes | Efficient, high-volume tool routing |
+| Google | `gemini-3.6-flash` | Yes | Fast agentic and spatial reasoning |
+| Anthropic | `claude-haiku-4-5-20251001` | No | Historical comparison only |
+
+The suite also accepts any custom model ID. Add a registry entry with its provider, exact model ID, and reasoning configuration; no scoring changes should be required.
+
+## Files
+
+- `cases.json` contains the canonical English requests and expected tool-call shapes.
+- `models.json` records the default model matrix and reproducibility settings.
+- `template.md` is the provider-neutral runbook and prompt contract.
+- `runs/` stores reviewed result reports. Raw provider responses should remain local unless they contain only synthetic benchmark data and are intentionally selected for publication.
 
 ## When to run
 
-Run the benchmark before merging when your PR:
+Run the benchmark before merging when a change:
 
-- Adds five or more new handler files, **or**
-- Edits any tool's description text, **or**
-- Precedes tagging a minor or major release (`v0.X.0` for X ≥ 2).
+- adds five or more handlers;
+- changes a tool name, description, schema, or safety annotation; or
+- precedes a minor or major release.
 
-Not required for: internal refactors that do not change the MCP surface, bug fixes that do not touch descriptions or parameter names, patch releases.
+It is optional for internal refactors and fixes that do not change the MCP surface.
 
 ## How to run
 
-1. Open Claude Code in this repo.
-2. Load `benchmarks/template.md` — either `/run benchmarks/template.md` or paste its contents into the chat.
-3. Claude will spawn a Haiku sub-agent via the `Agent` tool, feed it the 10 canonical queries with the current tool surface, score the results, and write a new file to `runs/<YYYY-MM-DD>-<commit-short>-<version>.md`.
-4. Expect 10–15 minutes wall-clock. Uses your existing Claude Code subscription — no Anthropic API key needed.
+1. Start the Cria server or load the current tool surface from `tests/RvtMcp.Tests/Golden/tools-list.json` plus the descriptions in `src/server/Program.cs`.
+2. Follow `template.md` once for each enabled model in `models.json`.
+3. Give every model the same tool definitions, English cases, output schema, and comparable reasoning setting.
+4. Save a reviewed report to `runs/<date>-<commit>-<model-id>.md`.
 
-## Threshold policy
+The benchmark plans tool calls only. It must not connect to a production Revit model or execute any tool.
 
-Compare param-accuracy delta vs the most recent run in `runs/`:
+## Comparison policy
 
-| Δ vs last baseline | Reaction |
+Compare a run only with the most recent run that has the same:
+
+- suite version;
+- exact model ID;
+- reasoning or thinking level; and
+- tool-surface profile.
+
+Cross-model scores are useful for product decisions, but they are not regression deltas. The first run for a model establishes that model's baseline.
+
+| Parameter-accuracy change | Reaction |
 |---|---|
-| < 5% | Within Haiku variance — ignore. |
-| 5% – 15% | Flag in the PR description; merge allowed. |
-| ≥ 15% | Block merge. Investigate the specific query failures — usually a description edit or tool-name collision is the culprit. |
+| Less than 5 percentage points | Treat as normal run variance. |
+| 5 to less than 15 percentage points | Review and record the affected cases. |
+| 15 percentage points or more | Block the tool-surface change until investigated. |
 
-Thresholds are reviewer conventions, not enforced CI gates.
+These are review rules, not CI gates.
 
-## Baseline
+## Language and privacy
 
-`runs/2026-04-16-fc99c67-v0.1.0-baseline.md` is the reference all future runs compare against. It is derived from an internal brainstorm benchmark (18-tool RICH-description result block). Rebaseline only at major releases.
+The canonical suite is English. Translated suites, if added later, must use a separate suite ID so language effects are measurable.
+
+Use only the synthetic requests in `cases.json`. Do not send model names, element data, drawings, paths, or other content from a live Revit project to a benchmark provider. API credentials must stay in environment variables or the provider's local client configuration and must never be written to a run report.

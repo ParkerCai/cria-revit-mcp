@@ -44,16 +44,16 @@ Source: `code.claude.com/docs/en/mcp` §"Add an MCP server".
 claude mcp add [options] <name> -- <command> [args...]
 ```
 
-> ⚠ All options (`--transport`, `--env`, `--scope`, `--header`) **must come before** `<name>`. The `--` separates `<name>` from the command + args passed to the server.
+> Warning: All options (`--transport`, `--env`, `--scope`, `--header`) **must come before** `<name>`. The `--` separates `<name>` from the command + args passed to the server.
 
 **Examples for RvtMcp:**
 
 ```bash
 # Local scope (default): only this project
-claude mcp add rvt-mcp -- "D:/Projects/bimwright/rvt-mcp/src/server/bin/Debug/net8.0/RvtMcp.Server.exe"
+claude mcp add cria-revit-mcp -- "<ABSOLUTE_PATH_TO_REPO>/src/server/bin/Debug/net8.0/RvtMcp.Server.exe"
 
 # User scope: every project on this machine
-claude mcp add rvt-mcp --scope user -- "D:/Projects/bimwright/rvt-mcp/src/server/bin/Debug/net8.0/RvtMcp.Server.exe"
+claude mcp add cria-revit-mcp --scope user -- "<ABSOLUTE_PATH_TO_REPO>/src/server/bin/Debug/net8.0/RvtMcp.Server.exe"
 
 # Project scope: write into .mcp.json (commit to repo, team uses it)
 claude mcp add rvt-mcp --scope project -- "%LOCALAPPDATA%\\RvtMcp\\server\\0.4.0\\RvtMcp.Server.exe"
@@ -114,7 +114,7 @@ The extension is **a thin UI over the CLI**, not a separate MCP runtime:
 3. Open Claude Code chat panel, type `/mcp` — `rvt-mcp` appears with status.
 4. Click to enable/disable or reconnect.
 
-> ⚠ **Historical caveat:** versions before ~2.1.69 (early 2026) could not list MCP servers in the extension UI at all. If `/mcp` doesn't show anything, upgrade the extension.
+> Historical caveat: versions before ~2.1.69 (early 2026) could not list MCP servers in the extension UI at all. If `/mcp` doesn't show anything, upgrade the extension.
 
 ---
 
@@ -141,7 +141,7 @@ Source: `support.claude.com/en/articles/10949351` and `modelcontextprotocol.io/d
   "mcpServers": {
     "rvt-mcp": {
       "type": "stdio",
-      "command": "D:\\Projects\\bimwright\\rvt-mcp\\src\\server\\bin\\Debug\\net8.0\\RvtMcp.Server.exe",
+      "command": "<ABSOLUTE_PATH_TO_REPO>\\src\\server\\bin\\Debug\\net8.0\\RvtMcp.Server.exe",
       "args": [],
       "env": {
         "BIMWRIGHT_READ_ONLY": "0"
@@ -272,7 +272,7 @@ Stdio servers like RvtMcp are **not auto-reconnected** if they crash mid-session
 **Install once (Claude Code CLI):**
 ```bash
 claude mcp add rvt-mcp --scope user -- "%LOCALAPPDATA%\\RvtMcp\\server\\0.4.0\\RvtMcp.Server.exe"
-claude mcp list                    # verify ✓ Connected
+claude mcp list                    # verify Connected
 ```
 
 **Install once (Claude Desktop):**

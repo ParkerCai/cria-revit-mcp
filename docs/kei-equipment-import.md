@@ -25,7 +25,7 @@ these tools**, never by replacing DB files from outside.
 
 ```json
 {
-  "sql": "UPDATE ProjectEquipmentTypes SET Brand = 'ShinMaywa' WHERE ProjectTypeName = '005. Bơm nước thải'",
+  "sql": "UPDATE ProjectEquipmentTypes SET Brand = 'ShinMaywa' WHERE ProjectTypeName = '005. Wastewater pump'",
   "dryRun": false,
   "database": "auto",
   "busyTimeoutMs": 30000
@@ -47,14 +47,14 @@ Or multiple statements in one transaction (`statements` is a JSON **string** at 
 {
   "items": [
     {
-      "projectTypeName": "005. Bơm nước thải",
+      "projectTypeName": "005. Wastewater pump",
       "categoryCode": "Pump",
-      "nameVN": "Bơm nước thải",
+      "nameVN": "Wastewater pump",
       "nameEN": "Wastewater pump",
-      "specsVN": "Lưu lượng: 167 m3/h\nCột áp: 19m\nCông suất: 15kW",
-      "area": "BỂ THU GOM",
+      "specsVN": "Flow rate: 167 m3/h\nHead: 19 m\nPower: 15 kW",
+      "area": "COLLECTION TANK",
       "brand": "ShinMaywa",
-      "unit": "Cái",
+      "unit": "Each",
       "originalTag": "BM-TG",
       "status": "AIExtracted",
       "quantity": 2,
@@ -89,7 +89,7 @@ Grok CLI (`~/.grok/config.toml`):
 
 ```toml
 [mcp_servers.rvt-mcp]
-command = "D:/Projects/bimwright/rvt-mcp/publish/server-kei/RvtMcp.Server.exe"
+command = "<ABSOLUTE_PATH_TO_REPO>/src/server/bin/Release/net8.0/RvtMcp.Server.exe"
 enabled = true
 startup_timeout_sec = 60
 ```

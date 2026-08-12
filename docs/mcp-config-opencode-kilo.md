@@ -62,7 +62,7 @@ For RvtMcp, **prefer user-level XDG path on Windows**: `%USERPROFILE%\.config\op
     "rvt-mcp": {
       "type": "local",
       "command": [
-        "D:\\Projects\\bimwright\\rvt-mcp\\src\\server\\bin\\Debug\\net8.0\\RvtMcp.Server.exe"
+        "<ABSOLUTE_PATH_TO_REPO>\\src\\server\\bin\\Debug\\net8.0\\RvtMcp.Server.exe"
       ],
       "environment": {
         "BIMWRIGHT_READ_ONLY": "0",
@@ -163,7 +163,7 @@ Precedence: **project > global** (project wins on conflicting keys, no merge bey
     "rvt-mcp": {
       "type": "local",
       "command": [
-        "D:\\Projects\\bimwright\\rvt-mcp\\src\\server\\bin\\Debug\\net8.0\\RvtMcp.Server.exe"
+        "<ABSOLUTE_PATH_TO_REPO>\\src\\server\\bin\\Debug\\net8.0\\RvtMcp.Server.exe"
       ],
       "environment": {
         "BIMWRIGHT_READ_ONLY": "0"
@@ -282,11 +282,11 @@ A fourth subtle one for **Kilo specifically**: tool permissions use `<server>_<t
 ```powershell
 $entry = [ordered]@{
     type    = 'local'
-    command = @($t.ServerCmd) + @($t.Args)   # array form ✅
+    command = @($t.ServerCmd) + @($t.Args)   # array form
     enabled = $true
 }
 if ($t.PSObject.Properties.Name -contains 'Env' -and $t.Env -and $t.Env.Count -gt 0) {
-    $entry['environment'] = $t.Env           # optional environment block ✅
+    $entry['environment'] = $t.Env           # optional environment block
 }
 $cfg['mcp'][$k] = $entry
 ```

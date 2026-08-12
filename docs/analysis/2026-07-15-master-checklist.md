@@ -36,10 +36,10 @@ Legend:
 
 | # | Topic | Status | Speed | Next action |
 |---|---|---|---|---|
-| **1** | Toast hoàn thiện? | **DONE** · **A1 PASS** | **Q** | Closed |
+| **1** | Toast complete? | **DONE** · **A1 PASS** | **Q** | Closed |
 | **2** | `send_code` + bake enable | **DONE** · **A2 PASS** | **Q** | Closed |
-| **3** | Bake khi body “khóa” | **PARTIAL by design** · **A3 PASS** | **Q** | Closed |
-| **4** | Bake cần VS? | **NO** · **A4 PASS** | **Q** | Closed |
+| **3** | Bake while code bodies are locked | **PARTIAL by design** · **A3 PASS** | **Q** | Closed |
+| **4** | Does bake require Visual Studio? | **NO** · **A4 PASS** | **Q** | Closed |
 | **5** | Risk switch / Status UX | **A5 PASS** | **Q** | Closed |
 | **6** | Python send_code | **WILL NOT DO** · **C1** | **L** | Use C# `send_code` |
 | **7** | Family authoring (#7) | **WILL NOT DO this cycle** · **B** | **M→L** | Use `send_code` |
@@ -56,7 +56,7 @@ Still open outside waves: KEI uncommitted; formal v0.6.0 tag — see completion 
 
 | Expectation | Verdict |
 |---|---|
-| Toast “đang làm” (in-progress) | **Removed** — result-only by design |
+| Toast while work is in progress | **Removed** — result-only by design |
 | Toast when call completes | **Yes** — `McpToastNotifier.OnCompleted` (4 paths in `McpEventHandler`) |
 | Capture success + thumbnail + click-open | **Yes** — allowlist paths only |
 | Thumbnail size cap | **Yes** — 8 MB load + decode width 300 |

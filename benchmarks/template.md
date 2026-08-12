@@ -1,118 +1,126 @@
-# Haiku benchmark — runtime template
+# Cross-provider benchmark runbook
 
-**Instructions for Claude (executing this template):**
+Use this runbook for every model. Do not substitute provider-specific tasks, tools, or hidden context.
 
-You are running the bimwright Haiku benchmark. Follow these steps exactly.
+## 1. Record the repository state
 
-## Step 1 — Identify current state
+From the repository root, record:
 
-Run:
-
-```bash
-cd /d/Projects/bimwright && git rev-parse --short HEAD
+```powershell
+git rev-parse --short HEAD
 ```
 
-Call this `<commit>`. Read the version from `src/server/Bimwright.Rvt.Server.csproj` `<Version>` element — call this `<version>`.
+Read the version from the `<Version>` element in `src/server/RvtMcp.Server.csproj`. Record the active Cria tool profile and the tool count.
 
-## Step 2 — Load the tool surface
+## 2. Load the tool surface
 
-Read `tests/Bimwright.Rvt.Tests/Golden/tools-list.json`. Extract the list of tools with their names and input schemas. Cross-reference the `[Description]` attributes in `src/server/Program.cs` to recover the full description text for each tool (the golden file stores only a hash).
+Prefer a current `tools/list` response from a local Cria server. Do not connect the server to a live Revit project for this benchmark.
 
-## Step 3 — Locate the most recent baseline
+For an offline run, use:
 
-List `benchmarks/runs/*.md` by filename (they are date-prefixed). The most recent run is the current baseline. Read it and extract the per-query score table.
+- schemas from `tests/RvtMcp.Tests/Golden/tools-list.json`; and
+- full tool descriptions from the `[McpServerTool]` methods in `src/server/Program.cs`.
 
-## Step 4 — Spawn the Haiku sub-agent
+Every model in the comparison must receive the same tool names, descriptions, schemas, and safety annotations.
 
-Use the `Agent` tool with `subagent_type: general-purpose`. Model: Haiku 4.5 (`claude-haiku-4-5-20251001`).
+## 3. Select the models
 
-**Agent prompt:**
+Read `benchmarks/models.json`. Run every entry with `enabledByDefault: true`, or record the exact subset selected by the reviewer. A model not listed there may be used when its provider, exact model ID, and reasoning configuration are recorded in the result.
 
-> You are a BIM user querying a Revit MCP server. I will give you the tool list + descriptions, followed by 10 queries in Vietnamese. For each query, pick exactly one tool (or a tool chain for multi-step queries) and produce the parameter JSON you would call it with. Reply in the format:
->
-> ```
-> Q<n>:
->   Tool: <tool_name>
->   Params: {...}
-> ```
->
-> Here is the tool list: *(paste RICH-style descriptions for each tool — pull from `Program.cs` `[Description]` attributes, augment where descriptions are thin)*
->
-> Here are the queries:
->
-> 1. Tìm tất cả tường cao hơn 3 mét
-> 2. Ẩn tất cả cửa trong view hiện tại
-> 3. Model này có bao nhiêu element?
-> 4. Tạo tường từ (0,0) đến (5000,0) ở Level 1, cao 3000mm
-> 5. Tạo sàn hình chữ nhật 6x4m ở tầng 2
-> 6. Tôi đang xem view gì?
-> 7. Tô màu tường theo vật liệu khác nhau
-> 8. Xóa element 12345 và 67890
-> 9. Tạo level mới ở cao độ 9000mm tên Level 4
-> 10. Xuất danh sách tất cả phòng với diện tích
+Do not silently replace a model with a `latest` alias or another tier. If the provider resolves aliases dynamically, record the resolved version when it is available.
 
-## Step 5 — Score the results
+## 4. Give each model the same task
 
-For each query, compare the Haiku agent's tool pick and parameter JSON to the expected tool + params in the baseline run file.
+Supply the complete tool surface, followed by this prompt and the contents of `benchmarks/cases.json`:
 
-- **Tool selection:** 1 point if the tool name is correct.
-- **Param accuracy:** 1 point if ALL param keys + value formats match. Partial credit 0.5 for off-by-one on a single key.
+> You are evaluating the Cria Revit MCP tool surface. Plan tool calls for the synthetic requests below. Do not execute any tool and do not connect to Revit. For each case, choose the smallest correct tool or ordered tool chain and provide the arguments you would send. Use only tools from the supplied surface. Preserve numeric units and represent values using the schema's types. When an argument depends on an earlier call result, use a clear placeholder such as `<element IDs returned by call 1>`. Return valid JSON only, using the output shape below. Use English for any notes.
 
-Produce two scores:
+Required output shape:
 
-- Tool selection accuracy: `(sum / 10) × 100%`
-- Param accuracy: `(sum / 10) × 100%`
+```json
+{
+  "suite": "cria-tool-routing-v1",
+  "model": {
+    "provider": "provider-name",
+    "id": "exact-model-id",
+    "reasoning": "exact-setting"
+  },
+  "results": [
+    {
+      "id": "Q1",
+      "calls": [
+        {
+          "tool": "revit_tool_name",
+          "arguments": {}
+        }
+      ]
+    }
+  ]
+}
+```
 
-## Step 6 — Compute delta vs baseline
+Reject and rerun a response that is not valid JSON or omits a case. Record reruns in the report.
 
-For each query, record whether this run scored the same, better, or worse than the baseline's corresponding query. Flag any query where the delta is ≥ 15% (i.e. a previously-correct query is now wrong, or vice versa).
+## 5. Score the response
 
-## Step 7 — Write the run file
+Use the expectations in `benchmarks/cases.json`.
 
-Write to `benchmarks/runs/<YYYY-MM-DD>-<commit>-<version>.md`:
+For each case:
+
+- **Tool selection:** 1 point when the exact ordered tool chain matches. For a multi-call chain, divide the point equally across call positions.
+- **Argument accuracy:** 1 point when every required argument is present and semantically matches an accepted value or rule. Award 0.5 only for one minor representation error that would be trivial to normalize. Otherwise award 0.
+
+Optional arguments do not reduce the score unless they conflict with the request or make the call unsafe. A derived-value placeholder is correct when it clearly refers to the required earlier call.
+
+Report tool-selection and argument-accuracy percentages separately. The overall score is their arithmetic mean.
+
+## 6. Compare like with like
+
+Find the most recent run with the same suite version, exact model ID, reasoning setting, and tool profile. If none exists, label the run as a new baseline. Never calculate a regression delta against a different model.
+
+## 7. Write the run report
+
+Write `benchmarks/runs/<YYYY-MM-DD>-<commit>-<model-id>.md`, replacing characters that are invalid in filenames.
 
 ```markdown
-# Haiku benchmark run — <date>
+# Tool-routing benchmark run — <date>
 
+- Suite: cria-tool-routing-v1
 - Commit: <commit>
 - Version: <version>
-- Tool count: <n>
-- Baseline compared: <path to previous run>
+- Provider: <provider>
+- Model: <exact model ID>
+- Reasoning: <setting>
+- Tool profile: <profile>
+- Tool count: <count>
+- Baseline: <path or New baseline>
+- Reruns: <count and reason>
 
 ## Score
 
-| Agent | Tool selection | Param accuracy | Overall |
-|---|---|---|---|
-| RICH (current) | X/10 | Y/10 | Z% |
-| RICH (baseline) | X/10 | Y/10 | Z% |
+| Tool selection | Argument accuracy | Overall | Delta vs matching baseline |
+|---:|---:|---:|---:|
+| X% | Y% | Z% | N/A or +/- N points |
 
-## Drops vs baseline (Δ ≥ 15%)
+## Regressions
 
-- **Q<n> (<query>)** — current picked `<tool>`, baseline picked `<tool>`.
-  Suspected cause: <analysis>
-  Suggested action: <description edit, rename, new USE WHEN clause>
+List each changed case, the current output, the matching baseline output, and the likely tool-description or schema cause. Write `None` when there are no regressions.
 
-<If no drops: write "None">
+## Case results
 
-## Raw results
-
-<details>
-<summary>Full query table</summary>
-
-| # | Query | Expected tool | Haiku tool | Expected params | Haiku params | Score |
-|---|---|---|---|---|---|---|
-| 1 | ... | ... | ... | ... | ... | 1.0 |
-
-</details>
+| Case | Expected tools | Model tools | Tool score | Argument score | Notes |
+|---|---|---|---:|---:|---|
+| Q1 | ... | ... | 1.0 | 1.0 | ... |
 ```
 
-## Step 8 — Summary in chat
+Do not commit or publish raw provider reasoning. Do not include credentials, live Revit data, or local machine paths.
 
-Print:
+## 8. Summarize
 
-- Overall score: tool-selection X%, param-accuracy Y%.
-- Delta vs baseline: +/- N percentage points.
-- Any queries with ≥ 15% drop (by query number).
-- One-line merge recommendation: "Merge OK", "Flag in PR", or "Block — investigate".
+Report:
 
-Do not commit the run file automatically. The user will review and commit.
+- exact provider, model ID, and reasoning setting;
+- tool-selection, argument-accuracy, and overall scores;
+- delta against the matching baseline, if one exists;
+- cases that regressed; and
+- recommendation: `Pass`, `Review`, or `Block`.

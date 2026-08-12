@@ -1,109 +1,82 @@
-<!-- mcp-name: io.github.bimwright/rvt-mcp -->
+<h1 align="center">cria-revit-mcp</h1>
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/bimwright/.github/master/assets/logos/rvt-mcp.png" alt="rvt-mcp" width="180" />
-</p>
-
-<h1 align="center">rvt-mcp</h1>
-
-<p align="center">
-  MCP gateway for Autodesk Revit — local tools for agents, optional personal bake loop
+  Local-first, stateless MCP gateway for Autodesk Revit
 </p>
 
 <p align="center">
-  <a href="https://github.com/bimwright/rvt-mcp/actions/workflows/build.yml"><img src="https://github.com/bimwright/rvt-mcp/actions/workflows/build.yml/badge.svg" alt="build" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="license" /></a>
-  <a href="#supported-revit-versions"><img src="https://img.shields.io/badge/Revit-2022--2027-186BFF" alt="Revit 2022-2027" /></a>
-  <a href="#tools"><img src="https://img.shields.io/badge/MCP-227%20tools-6C47FF" alt="MCP tools" /></a>
-</p>
-
-<p align="center">
-  English · <a href="README.vi.md">Tiếng Việt</a> · <a href="README.zh-CN.md">简体中文</a> · <a href="README.ja.md">日本語</a>
+  <a href="#runtime-scope"><img src="https://img.shields.io/badge/Revit-2026-186BFF" alt="Revit 2026" /></a>
+  <a href="#protocol"><img src="https://img.shields.io/badge/MCP-2026--07--28-6C47FF" alt="MCP 2026-07-28" /></a>
 </p>
 
 ---
 
-## Install (recommended)
+## Status
 
-On a machine that already has Revit, use the **setup ZIP** from [GitHub Releases](https://github.com/bimwright/rvt-mcp/releases/latest). You do **not** need the .NET SDK, NuGet global tools, or a clone of this repo.
+Cria is an early independent fork. The v0.1 foundation currently provides:
 
-**If you are an AI agent installing for a user:** download the latest `RvtMcp.Setup-*-win-x64.zip` and run the installer below. Do not clone or build unless they asked for a developer setup. Full agent notes: [AGENTS.md](AGENTS.md).
+- MCP C# SDK 2.1 and native MCP `2026-07-28` discovery.
+- Stateless localhost Streamable HTTP with no `Mcp-Session-Id`.
+- Stateless discovery over the default stdio transport.
+- No standalone legacy `/sse` endpoint.
+- `read-only`, `safe-authoring`, and `developer` profiles.
+- Revit 2026 plugin compilation and the inherited multi-version source layout.
 
-```powershell
-$tag = (Invoke-RestMethod https://api.github.com/repos/bimwright/rvt-mcp/releases/latest).tag_name
-$zip = "$env:TEMP\RvtMcp.Setup-$tag-win-x64.zip"
-$dir = "$env:TEMP\RvtMcp.Setup-$tag-win-x64"
-Invoke-WebRequest "https://github.com/bimwright/rvt-mcp/releases/download/$tag/RvtMcp.Setup-$tag-win-x64.zip" -OutFile $zip
-Expand-Archive $zip -DestinationPath $dir -Force
+There is no Cria installer or production release yet. Do not use the inherited upstream installer to install Cria; its package names and paths still belong to the upstream project.
 
-powershell -ExecutionPolicy Bypass -File "$dir\install.ps1" -WhatIf   # preview
-powershell -ExecutionPolicy Bypass -File "$dir\install.ps1"           # install
-```
+See [the v0.1 architecture](docs/cria-v0.1-architecture.md) and [upstream attribution](UPSTREAM.md).
 
-What `install.ps1` does:
+## Developer quick start
 
-- Finds Revit 2022–2027 and installs matching plugins
-- Copies a self-contained server under `%LOCALAPPDATA%\RvtMcp\rvt\server\<version>\`
-- Wires detected MCP clients with absolute paths (`-Client codex|opencode|claude|kilo|none` to override)
-
-Need only one Revit year?  
-`install.ps1 -Years 2024`
-
-For AutoCAD, use [dwg-mcp](https://github.com/bimwright/dwg-mcp) separately — different product, different install.
-
-### Check that it works
-
-1. Open Revit with a model.
-2. Start the MCP connection from the ribbon (BIMwright / RvtMcp panel).
-3. From the MCP client, list tools, then call `revit_get_current_view_info`.
-
-You should get something like:
-
-```json
-{ "viewName": "Level 1", "viewType": "FloorPlan", "levelName": "Level 1", "scale": 100 }
-```
-
-If that fails, install is not done yet — fix client config / plugin load before anything else.
-
-### Uninstall
-
-From the setup ZIP root (or this repo’s `scripts/`):
+Requires the .NET 8 SDK and Revit 2026 for live Revit testing.
 
 ```powershell
-# Setup ZIP layout:
-powershell -ExecutionPolicy Bypass -File .\uninstall.ps1 -WhatIf
-powershell -ExecutionPolicy Bypass -File .\uninstall.ps1 -Yes
-
-# Clone layout:
-powershell -ExecutionPolicy Bypass -File .\scripts\uninstall-all.ps1 -WhatIf
-powershell -ExecutionPolicy Bypass -File .\scripts\uninstall-all.ps1 -Yes
+dotnet test tests/RvtMcp.Tests/RvtMcp.Tests.csproj
+dotnet build src/plugin-r26/RvtMcp.Plugin.R26.csproj -c Release -p:RvtMcpSkipDeploy=true
 ```
 
-Removes plugins, self-contained server, client entries, discovery files, logs, and ToolBaker cache.
-
-### Developer install
+Start the MCP server on stdio:
 
 ```powershell
-dotnet tool install -g RvtMcp.Server
-powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 -SourceDir . -Client none
+dotnet run --project src/server/RvtMcp.Server.csproj -- --target 2026 --profile safe-authoring
 ```
 
-This is for hacking on the project. Day-to-day Revit machines should stick to the setup ZIP.
+Or use stateless Streamable HTTP on loopback only:
 
-### Migrating from `Bimwright.Rvt.*` (v0.3 and earlier)
+```powershell
+dotnet run --project src/server/RvtMcp.Server.csproj -- --target 2026 --profile safe-authoring --http 8200
+```
 
-v0.4+ renamed packages and folders to `RvtMcp.*` (repo name and brand stay bimwright).
+## Safety profiles
 
-1. Close every Revit.
-2. `pwsh scripts/uninstall-old.ps1` — drops old `%APPDATA%\…\Bimwright\` plugins and old server root; keeps user bake/journal data and migrates it to `%LOCALAPPDATA%\RvtMcp\` on first new launch.
-3. Install current release (setup ZIP above, or `dotnet tool install -g RvtMcp.Server`).
-4. Point MCP clients at entry name **`rvt-mcp`** (old per-year `bimwright-rvt-r22`… entries are removed by the installer).
+| Profile | Default behavior |
+|---|---|
+| `read-only` | Removes every write-capable toolset. |
+| `safe-authoring` | Default. Typed create and modify tools; deletion and arbitrary C# are absent. |
+| `developer` | Adds ToolBaker and `revit_send_code_to_revit`; deletion remains absent unless explicitly requested. |
+
+Explicit `--toolsets` remains an advanced override. In particular, `--toolsets all` exposes destructive and developer surfaces.
+
+## Protocol
+
+- Modern protocol: MCP `2026-07-28`.
+- Local transports: stdio and stateless Streamable HTTP.
+- Older clients: SDK 2.1 downgrade support remains enabled during migration.
+- Application state: the Revit process, active document, UI thread, and transaction state remain explicit Revit concerns even though MCP itself is stateless.
+
+## Runtime scope
+
+- Revit 2026 is the only initial runtime validation target.
+- The inherited Revit 2022–2027 projects remain in the repository when they compile without extra maintenance.
+- All model data, discovery files, logs, and Revit IPC stay on the workstation.
+- The v0.1 server intentionally retains upstream internal namespaces and discovery-file compatibility while product-facing identity changes to Cria.
 
 ---
 
 ## What this is
 
-`rvt-mcp` is a **local** bridge between an MCP client (Claude, Cursor, Codex, OpenCode, …) and a running Revit session.
+`cria-revit-mcp` is a **local** bridge between an MCP client (Claude, Cursor, Codex, OpenCode, …) and a running Revit session.
 
 Two processes:
 
@@ -124,33 +97,33 @@ There is no Node/TypeScript sidecar. Server, plugins, handlers, and ToolBaker ar
 
 People who live in Revit already know what they want automated. The friction was always shipping that idea as software: learn enough C#/Dynamo, fight the API, package an add-in, survive version upgrades — or pay someone else, or buy a fixed tool that only half-matches the office.
 
-Agents change the first half of that loop (describe the task, try it live). They do not remove transactions, units, selection, worksharing, or “did this just trash the model?” That is what this gateway is for: a **typed tool surface** for common work, plus an escape hatch when you need ad-hoc C# inside Revit, plus an **optional** path to turn repeated local patterns into personal tools (ToolBaker).
+Agents change the first half of that loop (describe the task, try it live). They do not remove transactions, units, selection, worksharing, or “did this just trash the model?” That is what this gateway is for: a **typed tool surface** for common work, plus an optional developer profile for ad-hoc C# and personal ToolBaker workflows.
 
 It is not a universal add-in for every firm. Offices differ. The bet is: start from a shared runtime, grow *your* tools on top.
 
-**Scope posture (honest):** we do not mint a new MCP tool for every edge case. Prefer typed tools when they exist; for everything else use `revit_send_code_to_revit` (C# only). Family *project* management is covered; full Family Editor authoring suites and Revit Viewer hosts are out of scope for now — see [docs/roadmap.md](docs/roadmap.md).
+**Scope posture (honest):** we do not mint a new MCP tool for every edge case. Prefer typed tools. The `developer` profile exposes `revit_send_code_to_revit` (C# only) when an experienced user explicitly accepts that risk. Family *project* management is covered; full Family Editor authoring suites and Revit Viewer hosts are out of scope for now — see [docs/roadmap.md](docs/roadmap.md).
 
 ---
 
 ## How a normal session looks
 
 1. Revit open with a model; plugin connected (ribbon).
-2. MCP client starts `rvt-mcp` / the installed server.
+2. MCP client starts `cria-revit-mcp` or the locally built server.
 3. Agent uses tools: query view/selection, create grids/rooms, sheets, MEP, export, … Lengths in **mm** at the tool boundary.
 4. Several writes in one undo step: `revit_batch_execute`.
 5. Multiple Revits running: `revit_list_available_targets` then `revit_switch_target` with a four-digit year (`2024`, not `R24`).
 
-When no typed tool fits:
+In the opt-in `developer` profile, when no typed tool fits:
 
 ```text
 revit_send_code_to_revit   # C# body, compiled and run inside the plugin
 ```
 
-That tool is on by default (toolset `toolbaker`). Strip it with `--read-only` or `--disable-toolbaker` if you do not want agents compiling code in the model.
+That tool is absent from the default `safe-authoring` profile. Enable it with `--profile developer` or an explicit ToolBaker configuration only when arbitrary C# execution is acceptable.
 
 ### ToolBaker (optional)
 
-By default you already have:
+The `developer` profile exposes:
 
 - `revit_send_code_to_revit`
 - `revit_list_baked_tools` / `revit_run_baked_tool` for tools you previously accepted
@@ -312,18 +285,18 @@ After changing server flags, restart the MCP connection so the client picks up t
 |--------|--------|
 | Claude Code | project `.mcp.json` or `~/.claude.json` |
 | Claude Desktop | `%APPDATA%\Claude\claude_desktop_config.json` |
-| OpenCode / Codex / Kilo | `install.ps1 -Client …` (scripted) |
+| OpenCode / Codex / Kilo | client-specific local MCP configuration |
 | Cursor / Cline / VS Code Copilot | documented JSON layouts |
 | Gemini CLI / Antigravity | `gemini mcp add` or settings JSON |
 
-Installer auto-detect is usually enough; see [AGENTS.md](AGENTS.md) and `docs/mcp-config-*.md` when hand-editing.
+There is no audited Cria installer yet. Start with [.mcp.json.example](.mcp.json.example) or the client-specific references under `docs/`.
 
 ---
 
 ## Repo layout
 
 ```text
-rvt-mcp/
+cria-revit-mcp/
 ├── src/
 │   ├── RvtMcp.sln
 │   ├── server/            # MCP server
@@ -343,20 +316,16 @@ rvt-mcp/
 ```bash
 dotnet test tests/RvtMcp.Tests/RvtMcp.Tests.csproj
 dotnet build src/server/RvtMcp.Server.csproj -c Release
-dotnet build src/plugin-r26/RvtMcp.Plugin.R26.csproj -c Release
+dotnet build src/plugin-r26/RvtMcp.Plugin.R26.csproj -c Release -p:RvtMcpSkipDeploy=true
 ```
 
-Close Revit before building plugins (DLL lock). Plugin projects deploy into `%APPDATA%\Autodesk\Revit\Addins\<year>\RvtMcp\` on a normal Debug/Release build.
-
-```powershell
-pwsh scripts/stage-plugin-zip.ps1 -Config Release
-```
+Close Revit before building plugins if a loaded DLL may be locked. Keep `RvtMcpSkipDeploy=true` during ordinary development so validation does not modify the Revit add-ins folder.
 
 Contribution norms and snapshot rules: [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ### Maturity
 
-Usable, not sacred. CI builds the six plugin shells and server tests. Runtime coverage is strongest on mid-range years; treat production models carefully and verify on *your* Revit build. Fresh-machine checklist: [docs/testing/fresh-install-checklist.md](docs/testing/fresh-install-checklist.md).
+Usable, not yet a production release. CI compiles the inherited six-shell matrix and runs server tests. Cria runtime validation is currently limited to Revit 2026; use a disposable model and verify every write before using production projects.
 
 ---
 
@@ -364,7 +333,7 @@ Usable, not sacred. CI builds the six plugin shells and server tests. Runtime co
 
 | Doc | Topic |
 |-----|--------|
-| [AGENTS.md](AGENTS.md) | Agent install protocol |
+| [AGENTS.md](AGENTS.md) | Development and validation safeguards |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Processes, transport, DTO rules |
 | [docs/bake.md](docs/bake.md) | Adaptive bake and body privacy |
 | [docs/roadmap.md](docs/roadmap.md) | Near-term hardening and non-goals |
@@ -373,20 +342,10 @@ Usable, not sacred. CI builds the six plugin shells and server tests. Runtime co
 
 ---
 
-## bimwright
-
-Same house style across AEC hosts:
-
-- [rvt-mcp](https://github.com/bimwright/rvt-mcp) — Revit  
-- [dwg-mcp](https://github.com/bimwright/dwg-mcp) — AutoCAD  
-- [nwd-mcp](https://github.com/bimwright/nwd-mcp) — Navisworks  
-- [ipt-mcp](https://github.com/bimwright/ipt-mcp) — Inventor  
-- [bim-wiki](https://github.com/bimwright/bim-wiki) — Vietnamese-first BIM notes  
-
----
-
 ## License
 
 Apache-2.0 — [LICENSE](LICENSE).
 
-Revit and Autodesk are trademarks of Autodesk, Inc. bimwright is independent and not affiliated with Autodesk.
+Cria Revit MCP is derived from [bimwright/rvt-mcp](https://github.com/bimwright/rvt-mcp); see [UPSTREAM.md](UPSTREAM.md) for attribution and retained compatibility details.
+
+Revit and Autodesk are trademarks of Autodesk, Inc. Cria is independent and is not affiliated with or endorsed by Autodesk or BIMwright.

@@ -15,7 +15,7 @@ namespace RvtMcp.Tests
         {
             var set = ToolsetFilter.Resolve(null);
             Assert.Equal(
-                new[] { "annotation", "create", "export", "families", "geometry", "graphics", "kei", "links", "lint", "materials", "mep", "meta", "organization", "parameters", "query", "rooms", "schedule", "sheets", "structural", "toolbaker", "view", "workflows" },
+                new[] { "annotation", "create", "export", "families", "geometry", "graphics", "kei", "links", "lint", "materials", "mep", "meta", "modify", "organization", "parameters", "query", "rooms", "schedule", "sheets", "structural", "view", "workflows" },
                 set.OrderBy(s => s).ToArray());
         }
 
@@ -24,7 +24,7 @@ namespace RvtMcp.Tests
         {
             var set = ToolsetFilter.Resolve(new RvtMcpConfig { Toolsets = new List<string>() });
             Assert.Equal(
-                new[] { "annotation", "create", "export", "families", "geometry", "graphics", "kei", "links", "lint", "materials", "mep", "meta", "organization", "parameters", "query", "rooms", "schedule", "sheets", "structural", "toolbaker", "view", "workflows" },
+                new[] { "annotation", "create", "export", "families", "geometry", "graphics", "kei", "links", "lint", "materials", "mep", "meta", "modify", "organization", "parameters", "query", "rooms", "schedule", "sheets", "structural", "view", "workflows" },
                 set.OrderBy(s => s).ToArray());
         }
 
@@ -45,7 +45,7 @@ namespace RvtMcp.Tests
             });
 
             Assert.Equal(ToolsetFilter.DefaultOn.OrderBy(s => s), set.OrderBy(s => s));
-            Assert.Contains("toolbaker", set);
+            Assert.DoesNotContain("toolbaker", set);
         }
 
         // --- Explicit toolsets --------------------------------------------
@@ -170,7 +170,7 @@ namespace RvtMcp.Tests
         }
 
         [Fact]
-        public void Resolve_EnableToolbaker_KeepsToolbakerInDefaults()
+        public void Resolve_EnableToolbaker_AddsToolbakerToDefaults()
         {
             var set = ToolsetFilter.Resolve(new RvtMcpConfig
             {

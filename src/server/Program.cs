@@ -1,6 +1,6 @@
 // Usage:
-//   stdio (default):  RvtMcp.Server.exe              — spawned by Claude/GPT/Cursor
-//   HTTP SSE:          RvtMcp.Server.exe --http 8200  — for Ollama/LM Studio/custom
+//   stdio (default):  cria-revit-mcp                 — spawned by Claude/GPT/Cursor
+//   Streamable HTTP:   cria-revit-mcp --http 8200     — localhost, stateless MCP
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -43,6 +43,14 @@ namespace RvtMcp.Server
             LegacyDataMigration.MigrateOnce();
             AuthToken.CleanupLegacyDiscoveryFiles();
             var config = RvtMcpConfig.Load(args);
+            if (!RvtMcpConfig.IsKnownProfile(config.Profile))
+            {
+                Console.Error.WriteLine(
+                    "[Cria] Invalid --profile value '" + config.Profile + "'. " +
+                    "Expected: read-only | safe-authoring | developer.");
+                Environment.Exit(1);
+                return;
+            }
             ServerState.Config = config;
             if (!string.IsNullOrWhiteSpace(config.Target))
             {
@@ -78,7 +86,7 @@ namespace RvtMcp.Server
                     Environment.Exit(1);
                     return;
                 }
-                await RunHttpSse(config, port);
+                await RunHttp(config, port);
             }
             else
             {
@@ -135,13 +143,18 @@ namespace RvtMcp.Server
             await app.RunAsync();
         }
 
-        private static async Task RunHttpSse(RvtMcpConfig config, int port)
+        private static async Task RunHttp(RvtMcpConfig config, int port)
         {
             var enabled = ToolsetFilter.Resolve(config);
             var builder = WebApplication.CreateBuilder();
             var mcp = builder.Services
                 .AddMcpServer(ConfigureMcpServerOptions)
-                .WithHttpTransport();
+                .WithHttpTransport(options =>
+                {
+                    // MCP 2026-07-28 has no initialize handshake or protocol session.
+                    // Keep this explicit so a future SDK default cannot silently change it.
+                    options.Stateless = true;
+                });
             mcp = RegisterToolsets(mcp, enabled, config);
             mcp.WithResources<RevitResources>();
 
@@ -164,8 +177,9 @@ namespace RvtMcp.Server
 
             app.MapMcp();
 
-            Console.Error.WriteLine($"[RvtMcp] SSE server listening on http://127.0.0.1:{port}");
-            Console.Error.WriteLine($"[RvtMcp] Toolsets enabled: {string.Join(",", enabled.OrderBy(n => n))}");
+            Console.Error.WriteLine($"[Cria] Stateless MCP listening on http://127.0.0.1:{port}/");
+            Console.Error.WriteLine($"[Cria] Profile: {config.ProfileOrDefault}");
+            Console.Error.WriteLine($"[Cria] Toolsets enabled: {string.Join(",", enabled.OrderBy(n => n))}");
             await app.RunAsync();
         }
 
@@ -173,12 +187,17 @@ namespace RvtMcp.Server
         {
             var usage = string.Join("\n", new[]
             {
-                "rvt-mcp — Revit MCP server (bimwright.dev)",
+                "cria-revit-mcp — local-first Revit MCP server",
                 "",
-                "Usage: rvt-mcp [options]",
+                "Usage: cria-revit-mcp [options]",
                 "",
                 "Transport:",
-                "  --http <port>           Run HTTP SSE on 127.0.0.1:<port> (1-65535). Default = stdio.",
+                "  --http <port>           Run stateless Streamable HTTP on 127.0.0.1:<port> (1-65535).",
+                "                          Default = stdio. Legacy HTTP+SSE is not exposed.",
+                "",
+                "Safety profile:",
+                "  --profile <name>        read-only | safe-authoring | developer.",
+                "                          Default: safe-authoring. Developer enables ToolBaker by default.",
                 "",
                 "Routing:",
                 "  --target 2022|2023|2024|2025|2026|2027",
@@ -195,7 +214,7 @@ namespace RvtMcp.Server
                 "  --read-only             Shortcut that strips every configured write-capable toolset.",
                 "",
                 "ToolBaker:",
-                "  --enable-toolbaker      Allow ToolBaker tools (default ON).",
+                "  --enable-toolbaker      Allow ToolBaker tools (default OFF; developer profile enables them).",
                 "  --disable-toolbaker     Disable ToolBaker tools.",
                 "  --enable-adaptive-bake  Enable adaptive ToolBaker suggestions (default OFF).",
                 "  --disable-adaptive-bake Disable adaptive ToolBaker suggestions.",
@@ -219,7 +238,7 @@ namespace RvtMcp.Server
                 "                          here for future cross-process propagation.)",
                 "",
                 "Env vars (override JSON, overridden by CLI):",
-                "  BIMWRIGHT_TARGET, BIMWRIGHT_TOOLSETS, BIMWRIGHT_READ_ONLY,",
+                "  CRIA_PROFILE, BIMWRIGHT_TARGET, BIMWRIGHT_TOOLSETS, BIMWRIGHT_READ_ONLY,",
                 "  BIMWRIGHT_ALLOW_LAN_BIND, BIMWRIGHT_ENABLE_TOOLBAKER,",
                 "  BIMWRIGHT_ENABLE_ADAPTIVE_BAKE, BIMWRIGHT_CACHE_SEND_CODE_BODIES,",
                 "  BIMWRIGHT_PERSIST_SEND_CODE_BODIES, BIMWRIGHT_PERSIST_SEND_CODE_BODIES_TTL",
@@ -241,15 +260,15 @@ namespace RvtMcp.Server
         // agent asking "list Revit tools" returns nothing even though 224 tools are exposed.
         // Anthropic truncates this field at 2KB; the keyword-dense first paragraph carries
         // the discoverability load if the SDK or proxy truncates later.
-        private static void ConfigureMcpServerOptions(ModelContextProtocol.Server.McpServerOptions opts)
+        internal static void ConfigureMcpServerOptions(ModelContextProtocol.Server.McpServerOptions opts)
         {
             opts.ServerInfo = new ModelContextProtocol.Protocol.Implementation
             {
-                Name = "rvt-mcp",
-                Title = "Revit MCP",
-                Version = "0.6.0",
-                Description = "Model Context Protocol gateway for Autodesk Revit 2022-2027",
-                WebsiteUrl = "https://github.com/bimwright/rvt-mcp"
+                Name = "cria-revit-mcp",
+                Title = "Cria Revit MCP",
+                Version = "0.1.0",
+                Description = "Local-first stateless Model Context Protocol gateway for Autodesk Revit",
+                WebsiteUrl = "https://github.com/ParkerCai/cria-revit-mcp"
             };
             opts.ServerInstructions = ServerInstructionsText;
         }
@@ -259,7 +278,7 @@ namespace RvtMcp.Server
         // signal for queries like "list Revit tools"), then a compact toolset-name index
         // — 2 examples per toolset — so semantic search for individual ops still resolves.
         private const string ServerInstructionsText =
-@"rvt-mcp — MCP gateway for Autodesk Revit 2022-2027. Use whenever user works with .rvt, Revit, BIM, walls, doors, windows, floors, ceilings, roofs, levels, grids, rooms, sheets, schedules, families, views, view templates, view filters, MEP (ducts, pipes, cable trays, conduits, HVAC, lighting, plumbing), structural (columns, beams, foundations, rebar), dimensions, tags, annotations, filled regions, keynotes, worksets, phases, linked models, parameters, materials, IFC, DWG, NWC, PDF.
+@"cria-revit-mcp — local-first stateless MCP gateway for Autodesk Revit. Use whenever user works with .rvt, Revit, BIM, walls, doors, windows, floors, ceilings, roofs, levels, grids, rooms, sheets, schedules, families, views, view templates, view filters, MEP (ducts, pipes, cable trays, conduits, HVAC, lighting, plumbing), structural (columns, beams, foundations, rebar), dimensions, tags, annotations, filled regions, keynotes, worksets, phases, linked models, parameters, materials, IFC, DWG, NWC, PDF.
 
 Multi-Revit: if >1 Revit may be open, call revit_list_available_targets THEN revit_switch_target. Versions are 4-digit calendar years (2022..2027), NOT R-codes.
 

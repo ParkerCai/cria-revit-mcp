@@ -1,0 +1,157 @@
+{
+  "schemaVersion": 1,
+  "suite": "cria-tool-routing-v1",
+  "language": "en-US",
+  "lengthUnit": "millimeters",
+  "cases": [
+    {
+      "id": "Q1",
+      "request": "Find all walls taller than 3,000 mm.",
+      "expectedCalls": [
+        {
+          "tool": "revit_ai_element_filter",
+          "requiredArguments": ["category", "parameterName", "parameterValue", "operator"],
+          "acceptedArguments": {
+            "category": ["Walls"],
+            "parameterName": ["Unconnected Height", "Height"],
+            "parameterValue": ["3000", 3000],
+            "operator": ["greaterthan"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "Q2",
+      "request": "Hide all doors in the current view.",
+      "expectedCalls": [
+        {
+          "tool": "revit_ai_element_filter",
+          "requiredArguments": ["category"],
+          "acceptedArguments": {
+            "category": ["Doors"]
+          }
+        },
+        {
+          "tool": "revit_operate_element",
+          "requiredArguments": ["operation", "elementIds"],
+          "acceptedArguments": {
+            "operation": ["hide"]
+          },
+          "derivedArguments": {
+            "elementIds": "Element IDs returned by call 1"
+          }
+        }
+      ]
+    },
+    {
+      "id": "Q3",
+      "request": "How many elements are in this model?",
+      "expectedCalls": [
+        {
+          "tool": "revit_analyze_model_statistics",
+          "requiredArguments": [],
+          "acceptedArguments": {}
+        }
+      ]
+    },
+    {
+      "id": "Q4",
+      "request": "Create a wall from (0, 0) to (5000, 0) on Level 1 with a height of 3000 mm.",
+      "expectedCalls": [
+        {
+          "tool": "revit_create_line_based_element",
+          "requiredArguments": ["elementType", "startX", "startY", "endX", "endY", "level", "height"],
+          "acceptedArguments": {
+            "elementType": ["wall", "Wall"],
+            "startX": [0],
+            "startY": [0],
+            "endX": [5000],
+            "endY": [0],
+            "level": ["Level 1"],
+            "height": [3000]
+          }
+        }
+      ]
+    },
+    {
+      "id": "Q5",
+      "request": "Create a 6 m by 4 m rectangular floor on Level 2.",
+      "expectedCalls": [
+        {
+          "tool": "revit_create_surface_based_element",
+          "requiredArguments": ["elementType", "points", "level"],
+          "acceptedArguments": {
+            "elementType": ["floor", "Floor"],
+            "level": ["Level 2"]
+          },
+          "semanticArguments": {
+            "points": "A closed or implicitly closed, non-self-intersecting 6000 mm by 4000 mm rectangle encoded as the schema requires"
+          }
+        }
+      ]
+    },
+    {
+      "id": "Q6",
+      "request": "Which view is currently active?",
+      "expectedCalls": [
+        {
+          "tool": "revit_get_current_view_info",
+          "requiredArguments": [],
+          "acceptedArguments": {}
+        }
+      ]
+    },
+    {
+      "id": "Q7",
+      "request": "Color-code walls by material in the current view.",
+      "expectedCalls": [
+        {
+          "tool": "revit_color_elements",
+          "requiredArguments": ["category", "parameterName"],
+          "acceptedArguments": {
+            "category": ["Walls"],
+            "parameterName": ["Material", "Structural Material"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "Q8",
+      "request": "Delete elements 12345 and 67890.",
+      "expectedCalls": [
+        {
+          "tool": "revit_delete_element",
+          "requiredArguments": ["elementIds"],
+          "acceptedArguments": {
+            "elementIds": ["[12345, 67890]", "[12345,67890]"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "Q9",
+      "request": "Create a level named Level 4 at an elevation of 9000 mm.",
+      "expectedCalls": [
+        {
+          "tool": "revit_create_level",
+          "requiredArguments": ["elevation", "name"],
+          "acceptedArguments": {
+            "elevation": [9000],
+            "name": ["Level 4"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "Q10",
+      "request": "Export all rooms with their areas.",
+      "expectedCalls": [
+        {
+          "tool": "revit_export_room_data",
+          "requiredArguments": [],
+          "acceptedArguments": {}
+        }
+      ]
+    }
+  ]
+}

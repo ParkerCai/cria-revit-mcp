@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "suite": "cria-tool-routing-v1",
+  "models": [
+    {
+      "provider": "openai",
+      "id": "gpt-5.6-terra",
+      "displayName": "GPT-5.6 Terra",
+      "reasoning": "medium",
+      "enabledByDefault": true,
+      "role": "balanced"
+    },
+    {
+      "provider": "openai",
+      "id": "gpt-5.6-luna",
+      "displayName": "GPT-5.6 Luna",
+      "reasoning": "medium",
+      "enabledByDefault": true,
+      "role": "efficient"
+    },
+    {
+      "provider": "google",
+      "id": "gemini-3.6-flash",
+      "displayName": "Gemini 3.6 Flash",
+      "reasoning": "medium",
+      "enabledByDefault": true,
+      "role": "fast-agentic"
+    },
+    {
+      "provider": "anthropic",
+      "id": "claude-haiku-4-5-20251001",
+      "displayName": "Claude Haiku 4.5",
+      "reasoning": "provider-default",
+      "enabledByDefault": false,
+      "role": "legacy-comparison"
+    }
+  ]
+}

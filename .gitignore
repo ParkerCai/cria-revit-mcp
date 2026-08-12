@@ -1,6 +1,8 @@
 # C# Build
 bin/
 obj/
+.dotnet/
+dotnet-install.ps1
 *.user
 *.suo
 *.cache
@@ -68,8 +70,8 @@ docs/roadmap-221-tools.md
 # MCP Registry publisher CLI (downloaded on demand)
 .mcp-publisher/
 
-# `dotnet pack` output (CI publishes nupkg from here)
-artifacts/
+# Local `dotnet pack` output
+/artifacts/
 
 # Local AI review sessions (prompt + output dumps)
-runs/
+/runs/

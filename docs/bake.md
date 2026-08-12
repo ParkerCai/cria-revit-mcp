@@ -8,7 +8,7 @@ Set the master flag before starting the MCP server:
 
 ```powershell
 $env:BIMWRIGHT_ENABLE_ADAPTIVE_BAKE = "1"
-rvt-mcp
+cria-revit-mcp
 ```
 
 Or set JSON config:
@@ -23,7 +23,7 @@ Config path: `%LOCALAPPDATA%\RvtMcp\rvtmcp.config.json`.
 
 `BIMWRIGHT_ENABLE_ADAPTIVE_BAKE=1` takes effect at the next MCP server start. If you change the flag while a Claude Code session is active, restart the MCP connection with disconnect -> reconnect via `/mcp` so `list_bake_suggestions`, `accept_bake_suggestion`, and `dismiss_bake_suggestion` appear.
 
-`send_code_to_revit` is part of the default ToolBaker surface and does not require adaptive bake. Adaptive bake only adds `list_bake_suggestions`, `accept_bake_suggestion`, `dismiss_bake_suggestion`, and local usage analysis for suggestions.
+`send_code_to_revit` is part of the ToolBaker surface exposed by the `developer` profile; it is absent from the default `safe-authoring` profile. Adaptive bake only adds `list_bake_suggestions`, `accept_bake_suggestion`, `dismiss_bake_suggestion`, and local usage analysis for suggestions.
 
 ## Optional Code Cache
 
@@ -84,7 +84,7 @@ The server is the only writer for `bake.db`. The Revit plugin opens `bake.db` re
 
 ## What Gets Logged
 
-When adaptive bake is enabled, Bimwright can log local usage signals such as:
+When adaptive bake is enabled, Cria can log local usage signals such as:
 
 - tool name and source type (`send_code`, preset, macro).
 - normalized argument shape and hashes.
@@ -100,7 +100,7 @@ Repeated patterns become suggestions. The suggestion lifecycle is user-controlle
 
 - **Accept** - compile/apply the suggestion and add it to the accepted-tool registry after the plugin succeeds.
 - **Snooze 30d** - hide the suggestion temporarily.
-- **Never** - keep the suggestion dismissed. For send-code patterns, Bimwright can create a local GitHub issue draft URL for a roadmap gap signal; it does not submit anything automatically.
+- **Never** - keep the suggestion dismissed. For send-code patterns, Cria can create a local GitHub issue draft URL for a roadmap gap signal; it does not submit anything automatically.
 
 Agent surface:
 
@@ -132,7 +132,7 @@ Accepted tools can also appear as Revit ribbon buttons when the accepted suggest
 
 ## Archive Behavior
 
-Accepted tools have lifecycle metadata. When a tool is archived, Bimwright keeps registry history but removes it from the active ribbon/runtime path. `run_baked_tool` returns archived-state guidance instead of executing it, and `list_baked_tools` remains the place to inspect active tools and replacements.
+Accepted tools have lifecycle metadata. When a tool is archived, Cria keeps registry history but removes it from the active ribbon/runtime path. `run_baked_tool` returns archived-state guidance instead of executing it, and `list_baked_tools` remains the place to inspect active tools and replacements.
 
 Archive is for tools that should not stay on the working ribbon but should remain auditable. Prefer archiving over deleting local history.
 

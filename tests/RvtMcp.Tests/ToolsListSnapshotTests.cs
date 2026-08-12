@@ -117,13 +117,13 @@ namespace RvtMcp.Tests
         }
 
         [Fact]
-        public void Default_toolsets_expose_send_code_without_adaptive_bake()
+        public void Default_safe_authoring_toolsets_exclude_toolbaker()
         {
             var captured = CaptureToolsList(new RvtMcpConfig());
 
-            Assert.Contains("\"name\": \"revit_send_code_to_revit\"", captured);
-            Assert.Contains("\"name\": \"revit_list_baked_tools\"", captured);
-            Assert.Contains("\"name\": \"revit_run_baked_tool\"", captured);
+            Assert.DoesNotContain("\"name\": \"revit_send_code_to_revit\"", captured);
+            Assert.DoesNotContain("\"name\": \"revit_list_baked_tools\"", captured);
+            Assert.DoesNotContain("\"name\": \"revit_run_baked_tool\"", captured);
             Assert.DoesNotContain("\"name\": \"revit_list_bake_suggestions\"", captured);
             Assert.DoesNotContain("\"name\": \"revit_accept_bake_suggestion\"", captured);
             Assert.DoesNotContain("\"name\": \"revit_dismiss_bake_suggestion\"", captured);

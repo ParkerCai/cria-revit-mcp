@@ -12,7 +12,7 @@ namespace RvtMcp.Tests
             var text = StatusPrivacySection.Build(new RvtMcpConfig(), toastEnabled: true);
 
             Assert.Contains("Toast notifications: ON", text);
-            Assert.Contains("ToolBaker tools: ON", text);
+            Assert.Contains("ToolBaker tools: OFF", text);
             Assert.Contains("Adaptive bake suggestions: OFF", text);
             Assert.Contains("Cache send_code bodies (for bake clusters): OFF", text);
             Assert.Contains("Persist send_code journal (TTL): OFF", text);

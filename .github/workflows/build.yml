@@ -1,4 +1,4 @@
-name: build
+name: ci
 
 on:
   push:
@@ -8,115 +8,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  plugin:
-    name: plugin-${{ matrix.revit }}
-    runs-on: windows-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - revit: R22
-            dir: plugin-r22
-            project: src/plugin-r22/RvtMcp.Plugin.R22.csproj
-            tfm: net48
-          - revit: R23
-            dir: plugin-r23
-            project: src/plugin-r23/RvtMcp.Plugin.R23.csproj
-            tfm: net48
-          - revit: R24
-            dir: plugin-r24
-            project: src/plugin-r24/RvtMcp.Plugin.R24.csproj
-            tfm: net48
-          - revit: R25
-            dir: plugin-r25
-            project: src/plugin-r25/RvtMcp.Plugin.R25.csproj
-            tfm: net8.0-windows7.0
-          - revit: R26
-            dir: plugin-r26
-            project: src/plugin-r26/RvtMcp.Plugin.R26.csproj
-            tfm: net8.0-windows7.0
-          - revit: R27
-            dir: plugin-r27
-            project: src/plugin-r27/RvtMcp.Plugin.R27.csproj
-            tfm: net10.0-windows7.0
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup .NET (8 + 10 preview)
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: |
-            8.0.x
-            10.0.x
-          dotnet-quality: preview
-
-      - name: Restore
-        run: dotnet restore ${{ matrix.project }}
-
-      - name: Build
-        run: dotnet build ${{ matrix.project }} -c Release --no-restore /p:RvtMcpSkipDeploy=true
-
-      - name: Upload plugin artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: rvtmcp-plugin-${{ matrix.revit }}
-          path: src/${{ matrix.dir }}/bin/Release/${{ matrix.tfm }}/
-          retention-days: 14
-
   server:
-    name: server-nuget
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup .NET 8
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 8.0.x
-
-      - name: Restore
-        run: dotnet restore src/server/RvtMcp.Server.csproj
-
-      - name: Build
-        run: dotnet build src/server/RvtMcp.Server.csproj -c Release --no-restore
-
-      - name: Pack .NET tool
-        run: dotnet pack src/server/RvtMcp.Server.csproj -c Release --no-build --output artifacts
-
-      - name: Upload nupkg
-        uses: actions/upload-artifact@v4
-        with:
-          name: rvtmcp-server-nupkg
-          path: artifacts/*.nupkg
-          retention-days: 14
-
-  client-setup:
-    name: client-setup-zip
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup .NET (8 + 10 preview)
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: |
-            8.0.x
-            10.0.x
-          dotnet-quality: preview
-
-      - name: Build client setup ZIP
-        shell: pwsh
-        run: pwsh scripts/package-client-setup.ps1 -Config Release
-
-      - name: Upload client setup ZIP
-        uses: actions/upload-artifact@v4
-        with:
-          name: rvtmcp-client-setup
-          path: build/client-setup/RvtMcp.Setup-*-win-x64.zip
-          retention-days: 14
-
-  tests:
-    name: tests-xunit
+    name: server-and-tests
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -129,6 +22,9 @@ jobs:
       - name: Restore
         run: dotnet restore tests/RvtMcp.Tests/RvtMcp.Tests.csproj
 
+      - name: Build server
+        run: dotnet build src/server/RvtMcp.Server.csproj -c Release --no-restore
+
       - name: Test
         run: dotnet test tests/RvtMcp.Tests/RvtMcp.Tests.csproj -c Release --no-restore --logger "trx;LogFileName=test-results.trx"
 
@@ -136,6 +32,42 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-results
+          name: cria-test-results
           path: tests/RvtMcp.Tests/TestResults/*.trx
           retention-days: 14
+
+  plugin:
+    name: plugin-${{ matrix.revit }}
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - revit: R22
+            project: src/plugin-r22/RvtMcp.Plugin.R22.csproj
+          - revit: R23
+            project: src/plugin-r23/RvtMcp.Plugin.R23.csproj
+          - revit: R24
+            project: src/plugin-r24/RvtMcp.Plugin.R24.csproj
+          - revit: R25
+            project: src/plugin-r25/RvtMcp.Plugin.R25.csproj
+          - revit: R26
+            project: src/plugin-r26/RvtMcp.Plugin.R26.csproj
+          - revit: R27
+            project: src/plugin-r27/RvtMcp.Plugin.R27.csproj
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 8 and .NET 10 preview
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            10.0.x
+          dotnet-quality: preview
+
+      - name: Restore
+        run: dotnet restore ${{ matrix.project }}
+
+      - name: Build without deploying to Revit
+        run: dotnet build ${{ matrix.project }} -c Release --no-restore /p:RvtMcpSkipDeploy=true

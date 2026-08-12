@@ -69,7 +69,7 @@ namespace RvtMcp.Tests
 
             var url = CreateBakeIssueDraftHandler.Handle(suggestion, "2026");
 
-            Assert.StartsWith("https://github.com/bimwright/rvt-mcp/issues/new?", url);
+            Assert.StartsWith("https://github.com/ParkerCai/cria-revit-mcp/issues/new?", url);
             Assert.Contains("title=MCP%20gap%20signal%3A%20recurring%20send_code_to_revit%20pattern", url);
             Assert.Contains("labels=mcp-gap", url);
 
@@ -103,7 +103,7 @@ namespace RvtMcp.Tests
                 "2026",
                 auditLog);
 
-            Assert.StartsWith("https://github.com/bimwright/rvt-mcp/issues/new?", url);
+            Assert.StartsWith("https://github.com/ParkerCai/cria-revit-mcp/issues/new?", url);
 
             var stored = db.GetSuggestion("s1")!;
             Assert.Equal("never", stored.State);

@@ -22,7 +22,7 @@ namespace RvtMcp.Server
 
         public static readonly string[] DefaultOn =
         {
-            "query", "create", "view", "schedule", "families", "mep", "graphics", "export", "toolbaker", "meta", "lint",
+            "query", "create", "modify", "view", "schedule", "families", "mep", "graphics", "export", "meta", "lint",
             "sheets", "materials", "geometry", "annotation", "rooms", "links", "parameters", "organization", "workflows",
             "structural", "kei"
         };
@@ -37,9 +37,10 @@ namespace RvtMcp.Server
         public static HashSet<string> Resolve(RvtMcpConfig config)
         {
             var requested = config?.Toolsets;
+            var usingDefaults = requested == null || requested.Count == 0;
             HashSet<string> set;
 
-            if (requested == null || requested.Count == 0)
+            if (usingDefaults)
             {
                 set = new HashSet<string>(DefaultOn, StringComparer.OrdinalIgnoreCase);
             }
@@ -55,6 +56,11 @@ namespace RvtMcp.Server
             // Drop unknown tokens silently (misspelling shouldn't crash the server)
             set.IntersectWith(KnownToolsets);
 
+            // Developer mode adds the arbitrary-C# ToolBaker surface to the default
+            // catalog. Explicit --toolsets still wins and is never expanded here.
+            if (usingDefaults && config?.EnableToolbakerOrDefault == true)
+                set.Add("toolbaker");
+
             // --read-only shortcut: strip every write-capable toolset regardless of
             // whether it was requested explicitly, via "all", or via defaults.
             if (config != null && config.ReadOnlyOrDefault)
@@ -62,7 +68,10 @@ namespace RvtMcp.Server
                 foreach (var w in WriteCapable) set.Remove(w);
             }
 
-            if (config != null && !config.EnableToolbakerOrDefault)
+            // An explicit toolset list (including "all") is an intentional override.
+            // Only an explicit disable removes ToolBaker from that requested surface.
+            if ((usingDefaults && config?.EnableToolbakerOrDefault != true)
+                || config?.EnableToolbaker == false)
                 set.Remove("toolbaker");
 
             return set;

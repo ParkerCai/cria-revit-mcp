@@ -14,14 +14,14 @@ namespace RvtMcp.Tests
             name => map.TryGetValue(name, out var v) ? v : null;
 
         [Fact]
-        public void Defaults_AdaptiveBakeFlagsOffAndToolbakerOn()
+        public void Defaults_AdaptiveBakeFlagsOffAndToolbakerOff()
         {
             var config = new RvtMcpConfig();
             Assert.Equal("BIMWRIGHT_ENABLE_ADAPTIVE_BAKE", RvtMcpConfig.EnvEnableAdaptiveBake);
             Assert.Equal("BIMWRIGHT_CACHE_SEND_CODE_BODIES", RvtMcpConfig.EnvCacheSendCodeBodies);
             Assert.False(config.EnableAdaptiveBakeOrDefault);
             Assert.False(config.CacheSendCodeBodiesOrDefault);
-            Assert.True(config.EnableToolbakerOrDefault);
+            Assert.False(config.EnableToolbakerOrDefault);
         }
 
         [Fact]

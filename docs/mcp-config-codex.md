@@ -13,9 +13,9 @@ For Anthropic clients (Claude Code CLI, Claude Code VS Code extension, Claude De
 
 | Client | Reads | Writes (via UI) | Status |
 |---|---|---|---|
-| **Codex CLI** (`codex` in terminal) | `~/.codex/config.toml` + `<project>/.codex/config.toml` (if trusted) | Same | ✅ Full support |
-| **Codex IDE extension** (VS Code, JetBrains) | **Same files as CLI** — config is shared | Same | ✅ Full support, official confirmed |
-| **Codex Desktop** (standalone app) | **Only `~/.codex/config.toml`** | `~/.codex/config.toml` | ⚠ Bug — ignores project-scoped config |
+| **Codex CLI** (`codex` in terminal) | `~/.codex/config.toml` + `<project>/.codex/config.toml` (if trusted) | Same | Full support |
+| **Codex IDE extension** (VS Code, JetBrains) | **Same files as CLI** — config is shared | Same | Full support, official confirmed |
+| **Codex Desktop** (standalone app) | **Only `~/.codex/config.toml`** | `~/.codex/config.toml` | Known issue: ignores project-scoped config |
 
 The Codex docs state explicitly: *"The CLI and the IDE extension share this configuration."* Desktop is the odd one out: as of 2026-05-22, [openai/codex#13025](https://github.com/openai/codex/issues/13025) reports — and OpenAI has not closed — that Codex Desktop silently ignores any `.codex/config.toml` placed inside a project root. Only `~/.codex/config.toml` (user-scope) is read.
 
@@ -41,7 +41,7 @@ Codex uses **TOML**, not JSON. The MCP server registry lives under tables named 
 
 ```toml
 [mcp_servers.rvt-mcp]
-command = "D:\\Projects\\bimwright\\rvt-mcp\\src\\server\\bin\\Debug\\net8.0\\RvtMcp.Server.exe"
+command = "<ABSOLUTE_PATH_TO_REPO>\\src\\server\\bin\\Debug\\net8.0\\RvtMcp.Server.exe"
 args = []
 ```
 
@@ -124,7 +124,7 @@ You can edit `config.toml` by hand OR use the CLI:
 
 ```bash
 # Basic stdio
-codex mcp add rvt-mcp -- "D:\\Projects\\bimwright\\rvt-mcp\\src\\server\\bin\\Debug\\net8.0\\RvtMcp.Server.exe"
+codex mcp add cria-revit-mcp -- "<ABSOLUTE_PATH_TO_REPO>\\src\\server\\bin\\Debug\\net8.0\\RvtMcp.Server.exe"
 
 # With env vars
 codex mcp add rvt-mcp \
@@ -160,7 +160,7 @@ Codex supports per-project config overrides at `<project-root>/.codex/config.tom
 In `~/.codex/config.toml`:
 
 ```toml
-[projects."D:/Projects/bimwright/rvt-mcp"]
+[projects."<ABSOLUTE_PATH_TO_REPO>"]
 trust_level = "trusted"
 ```
 
@@ -196,7 +196,7 @@ The repository's `scripts/install.ps1` already wires Codex correctly for Desktop
 $ok = Add-CodexEntry -ConfigPath (Join-Path $env:USERPROFILE '.codex\config.toml') -Targets $targets
 ```
 
-It writes to **user-scope** `~/.codex/config.toml`, which is the only file Codex Desktop reads. CLI and IDE extension also read this file, so a single registration covers all three Codex surfaces. ✅
+It writes to **user-scope** `~/.codex/config.toml`, which is the only file Codex Desktop reads. CLI and IDE extension also read this file, so a single registration covers all three Codex surfaces.
 
 The script also detects and removes legacy entries from the previous `bimwright-rvt-r22..r27` naming via a regex:
 
@@ -229,7 +229,7 @@ For RvtMcp v0.5+ (longest tool name = `revit_measure_distance_between_elements` 
 | Config format | JSON | JSON | **TOML** | **TOML** |
 | Top-level key | `mcpServers` | `mcpServers` | `mcp_servers` | `mcp_servers` |
 | User-scope path (Windows) | `%USERPROFILE%\.claude.json` | `%APPDATA%\Claude\claude_desktop_config.json` | `%USERPROFILE%\.codex\config.toml` | `%USERPROFILE%\.codex\config.toml` |
-| Project-scope file | `.mcp.json` at repo root | ❌ Not supported | `.codex/config.toml` + `trust_level="trusted"` | ❌ Bug #13025 — silently ignored |
+| Project-scope file | `.mcp.json` at repo root | Not supported | `.codex/config.toml` + `trust_level="trusted"` | Known issue #13025: silently ignored |
 | Add via CLI | `claude mcp add` | n/a (edit JSON) | `codex mcp add` | n/a (edit TOML) |
 | Per-server timeout | Global `MCP_TIMEOUT` env | Same | `startup_timeout_sec`, `tool_timeout_sec` | Same |
 | Tool filter | Permissions/allowlist patterns | Same | `enabled_tools`, `disabled_tools` | Same |
