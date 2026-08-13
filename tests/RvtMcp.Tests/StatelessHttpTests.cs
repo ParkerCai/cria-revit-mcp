@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -43,12 +44,32 @@ namespace RvtMcp.Tests
                 Assert.Equal("complete", result.GetProperty("resultType").GetString());
                 Assert.Contains("2026-07-28", result.GetProperty("supportedVersions").ToString());
                 Assert.Equal("private", result.GetProperty("cacheScope").GetString());
+                var instructions = result.GetProperty("instructions").GetString();
+                Assert.Contains("create_level", instructions);
+                Assert.Contains("batch_execute", instructions);
+                Assert.DoesNotContain("delete_element", instructions);
+                Assert.DoesNotContain("send_code_to_revit", instructions);
+                Assert.DoesNotContain("list_baked_tools", instructions);
                 Assert.Equal(
                     "cria-revit-mcp",
                     result.GetProperty("_meta")
                         .GetProperty("io.modelcontextprotocol/serverInfo")
                         .GetProperty("name")
                         .GetString());
+
+                using var forbiddenBatch = await SendToolCall(
+                    client,
+                    "revit_batch_execute",
+                    new
+                    {
+                        commands = "[{\"command\":\"delete_element\",\"params\":{\"elementIds\":[123]}}]",
+                        continueOnError = false
+                    });
+                var forbiddenBody = await forbiddenBatch.Content.ReadAsStringAsync();
+                Assert.Equal(HttpStatusCode.OK, forbiddenBatch.StatusCode);
+                Assert.False(forbiddenBatch.Headers.Contains("Mcp-Session-Id"));
+                Assert.Contains("batch_command_forbidden", forbiddenBody);
+                Assert.Contains("delete_element", forbiddenBody);
 
                 using var legacySse = await client.GetAsync("sse");
                 Assert.Equal(HttpStatusCode.NotFound, legacySse.StatusCode);
@@ -73,17 +94,39 @@ namespace RvtMcp.Tests
             var startInfo = new ProcessStartInfo
             {
                 FileName = dotnet,
-                Arguments = $"\"{serverAssembly}\" --http {port} --read-only --disable-toolbaker",
+                Arguments = $"\"{serverAssembly}\" --http {port} --profile safe-authoring --disable-toolbaker",
                 UseShellExecute = false,
                 CreateNoWindow = true,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true
             };
+            ClearInheritedCriaConfiguration(startInfo);
             startInfo.Environment["LOCALAPPDATA"] = tempRoot;
             startInfo.Environment["APPDATA"] = tempRoot;
 
             return Process.Start(startInfo)
                 ?? throw new InvalidOperationException("Failed to start the Cria MCP test server.");
+        }
+
+        private static void ClearInheritedCriaConfiguration(ProcessStartInfo startInfo)
+        {
+            foreach (var name in new[]
+            {
+                "CRIA_PROFILE",
+                "BIMWRIGHT_TARGET",
+                "BIMWRIGHT_TOOLSETS",
+                "BIMWRIGHT_READ_ONLY",
+                "BIMWRIGHT_ALLOW_LAN_BIND",
+                "BIMWRIGHT_ENABLE_TOOLBAKER",
+                "BIMWRIGHT_ENABLE_ADAPTIVE_BAKE",
+                "BIMWRIGHT_CACHE_SEND_CODE_BODIES",
+                "BIMWRIGHT_ENABLE_TOAST",
+                "BIMWRIGHT_PERSIST_SEND_CODE_BODIES",
+                "BIMWRIGHT_PERSIST_SEND_CODE_BODIES_TTL"
+            })
+            {
+                startInfo.Environment.Remove(name);
+            }
         }
 
         private static async Task<HttpResponseMessage> DiscoverWhenReady(HttpClient client)
@@ -140,6 +183,40 @@ namespace RvtMcp.Tests
             request.Headers.Accept.ParseAdd("application/json");
             request.Headers.Accept.ParseAdd("text/event-stream");
 
+            return client.SendAsync(request);
+        }
+
+        private static Task<HttpResponseMessage> SendToolCall(
+            HttpClient client,
+            string toolName,
+            object arguments)
+        {
+            var payload = JsonSerializer.Serialize(new
+            {
+                jsonrpc = "2.0",
+                id = 2,
+                method = "tools/call",
+                @params = new
+                {
+                    name = toolName,
+                    arguments,
+                    _meta = new Dictionary<string, object>
+                    {
+                        ["io.modelcontextprotocol/protocolVersion"] = "2026-07-28",
+                        ["io.modelcontextprotocol/clientCapabilities"] = new { }
+                    }
+                }
+            });
+
+            var request = new HttpRequestMessage(HttpMethod.Post, "")
+            {
+                Content = new StringContent(payload, Encoding.UTF8, "application/json")
+            };
+            request.Headers.Add("MCP-Protocol-Version", "2026-07-28");
+            request.Headers.Add("Mcp-Method", "tools/call");
+            request.Headers.Add("Mcp-Name", toolName);
+            request.Headers.Accept.ParseAdd("application/json");
+            request.Headers.Accept.ParseAdd("text/event-stream");
             return client.SendAsync(request);
         }
 

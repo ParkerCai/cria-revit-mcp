@@ -1,5 +1,7 @@
 # rvt-mcp completion backlog findings
 
+> **Upstream historical record:** This backlog predates the Cria fork. Its commands, defaults, release state, and product decisions are preserved only as provenance and do not describe current Cria behavior.
+
 - **Date:** 2026-07-15 (updated same day after waves A–C close-out)
 - **Scope:** What remains after audit + product decisions.
 - **Closed waves:** A (toast/bake/status), B (no family-authoring tools), C (no Python host, no Viewer). Canonical: `2026-07-15-product-decisions-closeout.md`.

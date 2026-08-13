@@ -532,7 +532,7 @@
     },
     {
       "name": "revit_batch_execute",
-      "description_hash": "sha256:138fdd070a88768b8d0c7c97a187f6644388e0188bf9136084babf9c59420d84",
+      "description_hash": "sha256:695f1afc535680b3fa81cc448be969dd4f952ae1b0bec1704b1a862623491014",
       "inputSchema": {
         "properties": {
           "commands": {

@@ -1,5 +1,7 @@
 ﻿# Changelog
 
+> **Publication warning:** Only the `Cria 0.1.0` section describes Cria. Every entry under `Upstream history` is retained solely as historical provenance and must not be read as a Cria release, installer, package, or current safety claim. The inherited `scripts/install.ps1` and `scripts/package-client-setup.ps1` entry points are disabled; other inherited release helpers remain unaudited.
+
 ## Cria 0.1.0 - Stateless MCP foundation
 
 ### Added
@@ -19,7 +21,7 @@
 
 ### Validation
 
-- 363 .NET tests pass.
+- The current .NET test suite passes; record the exact count in release evidence rather than maintaining it here.
 - Release server build passes without warnings.
 - Revit 2026 plugin release build passes with deployment disabled.
 

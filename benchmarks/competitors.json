@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "suite": "cria-revit-live-v1",
+  "revitVersion": 2026,
+  "servers": [
+    {
+      "id": "cria-revit-mcp",
+      "role": "candidate",
+      "repository": "https://github.com/ParkerCai/cria-revit-mcp",
+      "license": "Apache-2.0",
+      "primaryTrack": "typed-tools"
+    },
+    {
+      "id": "mcp-servers-for-revit",
+      "role": "primary-competitor",
+      "repository": "https://github.com/mcp-servers-for-revit/mcp-servers-for-revit",
+      "license": "MIT",
+      "primaryTrack": "typed-tools"
+    },
+    {
+      "id": "demolinator-revit-mcp-server",
+      "role": "primary-competitor",
+      "repository": "https://github.com/Demolinator/revit-mcp-server",
+      "license": "MIT",
+      "primaryTrack": "typed-tools",
+      "notes": "Arbitrary IronPython belongs only in the separate escape-hatch track."
+    },
+    {
+      "id": "aec-model-bridge",
+      "role": "primary-competitor",
+      "repository": "https://github.com/Sam-AEC/aec-model-bridge",
+      "license": "GPL-3.0-or-later with Revit Linking Exception or commercial for version 1.1 and later",
+      "primaryTrack": "typed-tools",
+      "notes": "Benchmark only. Do not copy code into Cria without a license review. Reflection and IronPython belong only in the escape-hatch track."
+    },
+    {
+      "id": "oakplank-revitmcp",
+      "role": "secondary-competitor",
+      "repository": "https://github.com/oakplank/RevitMCP",
+      "license": "MIT",
+      "primaryTrack": "typed-tools",
+      "notes": "Add after its Revit 2026 compatibility is verified locally."
+    },
+    {
+      "id": "bimwright-rvt-mcp",
+      "role": "regression-baseline",
+      "repository": "https://github.com/bimwright/rvt-mcp",
+      "license": "Apache-2.0",
+      "primaryTrack": "typed-tools",
+      "notes": "Upstream regression baseline, not an independent competitor."
+    }
+  ]
+}

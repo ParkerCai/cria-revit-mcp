@@ -1,9 +1,13 @@
 <#
 .SYNOPSIS
-  Stage RvtMcp plugin shells into build/plugin-zip/ for release packaging.
+  Disabled inherited upstream staging workflow. Do not use this for Cria.
 
 .DESCRIPTION
-  For each Revit year R22..R27, copies the built plugin DLL + .addin + runtime deps
+  Retained only for upstream history and migration reference. It exits before
+  building, copying, deleting, staging, or packaging anything. Cria does not
+  have an audited installer or release package yet.
+
+  The inherited implementation copied each Revit R22..R27 DLL + .addin + runtime deps
   from src/plugin-rNN/bin/<Config>/<TFM>/ into build/plugin-zip/R<nn>/, then produces
   build/plugin-zip/RvtMcp.Plugin.R<nn>.zip.
 
@@ -25,6 +29,8 @@ param(
     [string]$Config = 'Release',
     [string]$RepoRoot
 )
+
+throw 'Cria staging disabled: scripts/stage-plugin-zip.ps1 is inherited upstream code and is not an audited Cria workflow.'
 
 $ErrorActionPreference = 'Stop'
 

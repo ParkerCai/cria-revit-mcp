@@ -60,4 +60,4 @@ Example: `L{NN}-{Name}` matches `L01-Lobby`, `L12-Office`, but not `Level 1` (wo
 
 ## Contributing a profile
 
-v0.2.1 ships with no profiles shipped. If you'd like to propose one (generic standards like ISO 19650 or a published firm convention — not a private client's), open a PR adding `<id>.json` in this folder.
+Cria currently ships with no firm profiles. If you'd like to propose one (generic standards like ISO 19650 or a published firm convention — not a private client's), open a PR adding `<id>.json` in this folder.

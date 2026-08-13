@@ -1,5 +1,7 @@
 # MCP Calls Local Log Findings & Backlog
 
+> **Upstream historical record:** This analysis predates the Cria fork. Its commands, defaults, counts, and product decisions describe upstream `rvt-mcp`, not the current Cria safety profiles. Use the root README and current tests for Cria behavior.
+
 - **Date:** 2026-07-09
 - **Scope:** Log analysis of local `rvt-mcp` calls from the 2026-07-09 session.
 

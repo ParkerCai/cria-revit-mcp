@@ -30,9 +30,11 @@ The MCP transport is stateless. Revit is not. The running process, active docume
 
 ## Profiles implemented
 
-- `read-only`: removes every toolset classified as write-capable.
+- `read-only`: removes every toolset classified as model- or file-write-capable, including the mixed view toolset and atomic batch execution.
 - `safe-authoring`: default; includes typed create and modify surfaces, excludes delete and ToolBaker.
 - `developer`: adds ToolBaker and arbitrary C# execution, but does not add delete by default.
+
+Atomic batch execution is a separate write-capable toolset, so it is absent from `read-only`. Its positive allowlist contains only audited document-transaction commands for core modeling, parameter/type edits, and basic view/sheet/schedule authoring. Every inner command must also be exposed directly by the active profile. File, database, UI-selection, deletion, arbitrary C#, baked tools, and nested batches are rejected even when their direct surfaces are enabled.
 
 `--toolsets` is an explicit advanced override. `--toolsets all` exposes every registered toolset.
 

@@ -228,6 +228,69 @@ namespace RvtMcp.Tests
             Assert.Equal("run_baked_tool cannot be invoked through batch_execute; call run_baked_tool directly.", result.Value<string>("error"));
         }
 
+        [Theory]
+        [InlineData("delete_element")]
+        [InlineData("send_code_to_revit")]
+        public void Run_DangerousCommand_RejectedBeforeInvoke(string command)
+        {
+            var invoked = false;
+            var outcome = BatchExecutor.Run(
+                Cmds((command, new { })),
+                continueOnError: false,
+                (_, __) =>
+                {
+                    invoked = true;
+                    return BatchExecutor.InvokeResult.Ok(null);
+                });
+
+            Assert.True(outcome.AnyFailed);
+            Assert.False(invoked);
+            var result = JObject.FromObject(outcome.Results[0]);
+            Assert.Equal(BatchExecutor.DangerousCommandNotSupportedMessage(command), result.Value<string>("error"));
+        }
+
+        [Theory]
+        [InlineData("export_family_to_path")]
+        [InlineData("select_elements")]
+        [InlineData("write_kei_database")]
+        public void Run_NonAtomicCommand_RejectedBeforeInvoke(string command)
+        {
+            var invoked = false;
+            var outcome = BatchExecutor.Run(
+                Cmds((command, new { })),
+                continueOnError: false,
+                (_, __) =>
+                {
+                    invoked = true;
+                    return BatchExecutor.InvokeResult.Ok(null);
+                });
+
+            Assert.True(outcome.AnyFailed);
+            Assert.False(invoked);
+            var result = JObject.FromObject(outcome.Results[0]);
+            Assert.Equal(BatchExecutor.NonAtomicCommandNotSupportedMessage(command), result.Value<string>("error"));
+        }
+
+        [Theory]
+        [InlineData("create_sheet")]
+        [InlineData("place_schedule_on_sheet")]
+        public void Run_AllowlistedHandlerFailure_FlagsWholeBatchForRollback(string command)
+        {
+            var commands = Cmds(
+                ("create_level", new { elevation = 3000 }),
+                (command, new { }));
+            var outcome = BatchExecutor.Run(
+                commands,
+                continueOnError: false,
+                (name, _) => name == "create_level"
+                    ? BatchExecutor.InvokeResult.Ok(new { elementId = 1 })
+                    : BatchExecutor.InvokeResult.Fail("intentional handler failure"));
+
+            Assert.True(outcome.AnyFailed);
+            Assert.Equal(2, outcome.Results.Count);
+            Assert.False(JObject.FromObject(outcome.Results[1]).Value<bool>("ok"));
+        }
+
         [Fact]
         public void Run_HandlerThrows_CapturedAsFailure()
         {

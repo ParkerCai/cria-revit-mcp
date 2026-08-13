@@ -1,0 +1,114 @@
+{
+  "schemaVersion": 1,
+  "suite": "cria-revit-live-v1",
+  "revitVersion": 2026,
+  "units": "millimeters",
+  "fixture": {
+    "manifest": ".local/live-fixture.json",
+    "requiredFields": ["sourceSha256", "workingCopySha256", "revitBuild", "testLevel", "testOrigin", "availableTypeIds"]
+  },
+  "defaultToleranceMm": 1,
+  "cases": [
+    {
+      "id": "L01-read-model",
+      "cohort": "common-core",
+      "request": "Report the active view and count the model elements by category.",
+      "requiredCapabilities": ["active-view", "model-statistics"],
+      "oracle": {
+        "kind": "read-only-baseline",
+        "assertions": ["active view identity matches the fixture", "category counts match the independent API oracle"]
+      }
+    },
+    {
+      "id": "L02-author-room-shell",
+      "cohort": "authoring",
+      "request": "Create a 6000 mm by 4000 mm rectangular room shell on the designated test level with four 3000 mm-high walls and one architectural floor.",
+      "requiredCapabilities": ["wall-authoring", "floor-authoring"],
+      "inputs": {
+        "level": "fixture.testLevel",
+        "origin": "fixture.testOrigin",
+        "widthMm": 6000,
+        "depthMm": 4000,
+        "wallHeightMm": 3000,
+        "floorCategory": "OST_Floors"
+      },
+      "oracle": {
+        "kind": "revit-end-state",
+        "assertions": ["four walls form one closed axis-aligned rectangle", "wall heights equal 3000 mm", "one OST_Floors floor covers 24 square metres within tolerance", "no OST_StructuralFoundation element is accepted as the requested floor"]
+      }
+    },
+    {
+      "id": "L03-documentation",
+      "cohort": "documentation",
+      "request": "Create sheet CRIA-BENCH-001, create an itemized wall schedule with Family and Type and Length, and place it on the sheet.",
+      "requiredCapabilities": ["sheet-authoring", "schedule-authoring", "schedule-placement"],
+      "inputs": {
+        "sheetNumber": "CRIA-BENCH-001",
+        "sheetName": "Cria Benchmark",
+        "scheduleName": "CRIA Benchmark Wall Schedule",
+        "scheduleCategory": "Walls",
+        "fields": ["Family and Type", "Length"],
+        "placementMm": { "x": 100, "y": 150 }
+      },
+      "oracle": {
+        "kind": "revit-end-state",
+        "assertions": ["exactly one sheet has the requested number", "the schedule has exactly the requested category and fields", "one schedule instance owned by the sheet references that schedule"]
+      }
+    },
+    {
+      "id": "L04-audit",
+      "cohort": "audit",
+      "request": "Audit model warnings, view and sheet counts, families, and duplicate or overlapping elements without modifying the model.",
+      "requiredCapabilities": ["warnings", "model-audit"],
+      "oracle": {
+        "kind": "read-only-baseline",
+        "assertions": ["reported warning total matches Revit API", "requested counts match the fixture", "document modification state remains unchanged"]
+      }
+    },
+    {
+      "id": "L05-atomic-failure",
+      "cohort": "safety",
+      "request": "Create a temporary level and then execute an intentionally invalid second operation as one atomic workflow.",
+      "requiredCapabilities": ["multi-operation-workflow"],
+      "inputs": {
+        "temporaryLevelName": "CRIA_BENCH_ROLLBACK",
+        "temporaryLevelElevationMm": 12345,
+        "failureContract": "Use an advertised transaction-capable operation whose parameters are guaranteed to fail only after the server dispatches the workflow. Do not use an unknown tool or command that can be rejected before the first operation runs.",
+        "criaReferenceFailure": {
+          "command": "create_grid",
+          "params": { "startX": 0, "startY": 0, "endX": 0, "endY": 0 }
+        }
+      },
+      "oracle": {
+        "kind": "revit-end-state",
+        "assertions": ["the temporary level is absent after failure", "element counts equal the pre-case baseline", "partial completion is reported explicitly"]
+      }
+    },
+    {
+      "id": "L06-restart-recovery",
+      "cohort": "recovery",
+      "request": "Report the active view and model counts after the harness restarts the MCP server while Revit remains open.",
+      "requiredCapabilities": ["server-restart", "reconnect"],
+      "lifecycle": ["capture pre-restart oracle", "harness stops only the owned server process", "harness restarts the same server build and configuration", "run the read request", "capture post-restart oracle"],
+      "oracle": {
+        "kind": "transport-and-state",
+        "assertions": ["the server reconnects to the same fixture", "read results match the pre-restart baseline", "no model mutation occurs"]
+      }
+    },
+    {
+      "id": "L07-normalized-raster-execution",
+      "cohort": "raster-plan",
+      "request": "Model the supplied normalized plan package in the designated test area.",
+      "requiredCapabilities": ["wall-authoring", "opening-authoring", "floor-authoring"],
+      "inputs": {
+        "normalizedPlanManifest": ".local/normalized-plan.json",
+        "requiredManifestFields": ["sha256", "coordinateSystem", "units", "walls", "openings", "floors", "tolerances"]
+      },
+      "oracle": {
+        "kind": "revit-end-state",
+        "assertions": ["element topology matches the normalized plan graph", "geometry stays within stated tolerances", "doors and windows are hosted and oriented as specified"]
+      },
+      "notes": "This case measures Revit execution, not computer vision. A separate vision track may begin with the same raster and score the intermediate plan package before Revit execution."
+    }
+  ]
+}

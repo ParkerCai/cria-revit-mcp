@@ -71,7 +71,7 @@ namespace RvtMcp.Plugin.Commands
             var config = RvtMcpConfig.Load();
             var privacyBlock = StatusPrivacySection.Build(config, App.Instance.ToastEnabled);
 
-            var td = new TaskDialog("RvtMcp Status")
+            var td = new TaskDialog("Cria Revit MCP Status")
             {
                 CommonButtons = TaskDialogCommonButtons.Ok,
                 MainInstruction = $"MCP is {(running ? "running" : "not running")}",

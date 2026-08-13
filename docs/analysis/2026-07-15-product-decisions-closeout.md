@@ -1,5 +1,7 @@
 # Product decisions close-out (2026-07-15)
 
+> **Upstream historical record:** This close-out predates the Cria fork. Its tool counts, ToolBaker defaults, and release decisions do not describe current Cria behavior. Use the root README and current tests for Cria.
+
 Session waves A → C on `rvt-mcp`. Canonical tracker: `docs/analysis/2026-07-15-master-checklist.md`.
 
 ## Posture

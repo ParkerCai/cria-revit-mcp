@@ -1,17 +1,12 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-  Install or uninstall RvtMcp Revit client components.
+  Disabled inherited upstream installer. Do not use this as a Cria workflow.
 
 .DESCRIPTION
-  In a client setup ZIP, this script installs:
-    - the self-contained MCP server from server/
-    - matching per-Revit plugin ZIPs from plugins/
-    - optional MCP client config entries using an absolute server path
-
-  It also remains compatible with the older plugin-only release layout where
-  per-Revit plugin ZIPs sit beside this script and the server is installed as a
-  .NET global tool by the user.
+  This file is retained only for upstream history and migration reference. It
+  exits before reading, writing, installing, uninstalling, or changing MCP
+  client configuration. Cria does not have an audited installer yet.
 
 .PARAMETER SourceDir
   Setup root or plugin ZIP source directory. Defaults to the current setup root
@@ -25,11 +20,6 @@
 .PARAMETER WireClient
   Backward-compatible alias for older scripts. Overrides -Client when set.
 
-.EXAMPLE
-  pwsh .\install.ps1 -WhatIf
-  pwsh .\install.ps1
-  pwsh .\install.ps1 -Client codex
-  pwsh .\install.ps1 -Years 2024 -Client none
 #>
 [CmdletBinding(SupportsShouldProcess = $true)]
 param(
@@ -42,6 +32,8 @@ param(
     [string]$WireClient,
     [string]$ServerInstallRoot
 )
+
+throw 'Cria installer disabled: scripts/install.ps1 is inherited upstream code and is not an audited Cria workflow. Build locally with RvtMcpSkipDeploy=true and follow README.md.'
 
 $ErrorActionPreference = 'Stop'
 

@@ -1,21 +1,12 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-  Build the end-user RvtMcp setup ZIP.
+  Disabled inherited upstream packaging workflow. Do not use this for Cria.
 
 .DESCRIPTION
-  Produces a single client-facing archive that contains:
-    - a self-contained win-x64 MCP server executable under server/
-    - per-Revit plugin ZIPs under plugins/
-    - install.ps1 and uninstall.ps1 entrypoints
-    - manifest.json with file hashes and release metadata
-
-  This is the client installer path. It does not require the target machine to
-  have the .NET SDK or the source repository.
-
-.EXAMPLE
-  pwsh scripts/package-client-setup.ps1
-  pwsh scripts/package-client-setup.ps1 -Version 0.4.0
+  This file is retained only for upstream history and migration reference. It
+  exits before building, staging, deleting, packaging, or publishing anything.
+  Cria does not have an audited installer or release package yet.
 #>
 [CmdletBinding()]
 param(
@@ -28,6 +19,8 @@ param(
 
     [string]$OutputDir
 )
+
+throw 'Cria packaging disabled: scripts/package-client-setup.ps1 is inherited upstream code and is not an audited Cria workflow.'
 
 $ErrorActionPreference = 'Stop'
 

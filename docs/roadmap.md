@@ -17,7 +17,9 @@ This is direction, not a release commitment.
 - Preview and confirmation contracts for destructive or high-impact operations.
 - Better progress and cancellation behavior for long Revit operations.
 - Tool-surface review focused on smaller context cost and clearer routing.
+- A test-only MCP conformance host with the official diagnostic fixture surface.
 - Audited Cria installer and packaging; inherited upstream installers must not be used as Cria releases.
+- Authenticode-signed release add-in binaries so Revit can verify the publisher; local development builds remain unsigned.
 - Clear storage migration away from retained upstream compatibility paths when it can be done safely.
 
 ## Later

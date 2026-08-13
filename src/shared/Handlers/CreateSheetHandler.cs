@@ -123,11 +123,7 @@ namespace RvtMcp.Plugin.Handlers
                 catch (Exception ex)
                 {
                     if (tx.HasStarted()) tx.RollBack();
-                    return CommandResult.Ok(new
-                    {
-                        created = false,
-                        error = ex.Message
-                    });
+                    return CommandResult.Fail("Failed to create sheet: " + ex.Message);
                 }
             }
         }

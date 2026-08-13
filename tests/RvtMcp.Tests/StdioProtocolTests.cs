@@ -67,11 +67,33 @@ namespace RvtMcp.Tests
                 RedirectStandardOutput = true,
                 RedirectStandardError = true
             };
+            ClearInheritedCriaConfiguration(startInfo);
             startInfo.Environment["LOCALAPPDATA"] = tempRoot;
             startInfo.Environment["APPDATA"] = tempRoot;
 
             return Process.Start(startInfo)
                 ?? throw new InvalidOperationException("Failed to start the Cria MCP stdio test server.");
+        }
+
+        private static void ClearInheritedCriaConfiguration(ProcessStartInfo startInfo)
+        {
+            foreach (var name in new[]
+            {
+                "CRIA_PROFILE",
+                "BIMWRIGHT_TARGET",
+                "BIMWRIGHT_TOOLSETS",
+                "BIMWRIGHT_READ_ONLY",
+                "BIMWRIGHT_ALLOW_LAN_BIND",
+                "BIMWRIGHT_ENABLE_TOOLBAKER",
+                "BIMWRIGHT_ENABLE_ADAPTIVE_BAKE",
+                "BIMWRIGHT_CACHE_SEND_CODE_BODIES",
+                "BIMWRIGHT_ENABLE_TOAST",
+                "BIMWRIGHT_PERSIST_SEND_CODE_BODIES",
+                "BIMWRIGHT_PERSIST_SEND_CODE_BODIES_TTL"
+            })
+            {
+                startInfo.Environment.Remove(name);
+            }
         }
     }
 }

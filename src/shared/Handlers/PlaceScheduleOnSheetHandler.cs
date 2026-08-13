@@ -142,11 +142,7 @@ namespace RvtMcp.Plugin.Handlers
                 catch (Exception ex)
                 {
                     if (tx.HasStarted()) tx.RollBack();
-                    return CommandResult.Ok(new
-                    {
-                        placed = false,
-                        error = ex.Message
-                    });
+                    return CommandResult.Fail("Failed to place schedule on sheet: " + ex.Message);
                 }
             }
         }

@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "adapters": {
+    "gpt-5.6-terra": {
+      "command": ["path-to-your-adapter", "--model", "{model}"],
+      "timeoutMs": 180000,
+      "requiredEnvironment": ["OPENAI_API_KEY"]
+    },
+    "gpt-5.6-luna": {
+      "command": ["path-to-your-adapter", "--model", "{model}"],
+      "timeoutMs": 180000,
+      "requiredEnvironment": ["OPENAI_API_KEY"]
+    },
+    "gemini-3.6-flash": {
+      "command": ["path-to-your-adapter", "--model", "{model}"],
+      "timeoutMs": 180000,
+      "requiredEnvironment": ["GEMINI_API_KEY"]
+    }
+  }
+}

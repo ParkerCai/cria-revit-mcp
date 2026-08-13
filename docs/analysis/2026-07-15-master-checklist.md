@@ -1,5 +1,7 @@
 # rvt-mcp master checklist (verified 2026-07-15)
 
+> **Upstream historical record:** This checklist predates the Cria fork. In particular, its ToolBaker and `send_code` defaults are not Cria defaults. Cria uses `safe-authoring` by default; arbitrary C# is available only through the explicit `developer` profile or advanced overrides.
+
 Tracking list from owner brainstorm. Each item verified against code via explore sub-agents + direct reads.  
 **Waves A–C closed 2026-07-15** — see `2026-07-15-product-decisions-closeout.md`. Paperwork for toast + non-goals updated (README, CHANGELOG Unreleased, roadmap, design statuses).
 

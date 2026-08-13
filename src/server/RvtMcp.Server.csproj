@@ -15,14 +15,14 @@
     <ToolCommandName>cria-revit-mcp</ToolCommandName>
     <PackageId>Cria.RevitMcp.Server</PackageId>
     <Version>0.1.0</Version>
-    <Authors>Khoa Le</Authors>
+    <Authors>Parker Cai; Khoa Le</Authors>
     <Description>Local-first, stateless MCP gateway for Autodesk Revit. Initially runtime-tested with Revit 2026 while preserving the upstream multi-version build matrix.</Description>
     <PackageProjectUrl>https://github.com/ParkerCai/cria-revit-mcp</PackageProjectUrl>
     <RepositoryUrl>https://github.com/ParkerCai/cria-revit-mcp</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <PackageTags>mcp;revit;bim;ai;stateless</PackageTags>
-    <Copyright>Copyright 2026 Khoa Le</Copyright>
+    <Copyright>Copyright 2026 Parker Cai and contributors; upstream portions Copyright 2026 Khoa Le</Copyright>
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
@@ -39,6 +39,7 @@
     <Compile Include="..\shared\ToolBaker\BakedToolRecord.cs" Link="Shared\BakedToolRecord.cs" />
     <Compile Include="..\shared\ToolBaker\BakedToolRuntimeSource.cs" Link="Shared\BakedToolRuntimeSource.cs" />
     <Compile Include="..\shared\Infrastructure\LegacyDataMigration.cs" Link="Shared\LegacyDataMigration.cs" />
+    <Compile Include="..\shared\Infrastructure\AtomicBatchCommandCatalog.cs" Link="Shared\AtomicBatchCommandCatalog.cs" />
   </ItemGroup>
 
   <!-- Expose internal helpers (ParseCsv, ApplyCliArgs, ApplyEnvVars, Load overloads, etc.)

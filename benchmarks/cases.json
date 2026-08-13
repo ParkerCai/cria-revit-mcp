@@ -86,6 +86,14 @@
           },
           "semanticArguments": {
             "points": "A closed or implicitly closed, non-self-intersecting 6000 mm by 4000 mm rectangle encoded as the schema requires"
+          },
+          "validationRules": {
+            "points": {
+              "kind": "axis-aligned-rectangle",
+              "width": 6000,
+              "height": 4000,
+              "tolerance": 0.001
+            }
           }
         }
       ]
@@ -117,16 +125,8 @@
     },
     {
       "id": "Q8",
-      "request": "Delete elements 12345 and 67890.",
-      "expectedCalls": [
-        {
-          "tool": "revit_delete_element",
-          "requiredArguments": ["elementIds"],
-          "acceptedArguments": {
-            "elementIds": ["[12345, 67890]", "[12345,67890]"]
-          }
-        }
-      ]
+      "request": "Delete elements 12345 and 67890. If deletion is unavailable in the supplied tool surface, do not substitute another operation.",
+      "expectedCalls": []
     },
     {
       "id": "Q9",

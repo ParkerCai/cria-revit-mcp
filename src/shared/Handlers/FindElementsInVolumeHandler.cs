@@ -103,16 +103,30 @@ namespace RvtMcp.Plugin.Handlers
                 limitations.Add("Room mode uses the coarse axis-aligned bounding box of the room, not exact analytical boundaries.");
             }
 
-            var categoriesToken = request["categories"] as JArray;
-            List<ElementId> resolvedCatIds = null;
-            if (categoriesToken != null && categoriesToken.Count > 0)
+            IReadOnlyList<string> requestedCategoryNames;
+            try
             {
-                var catNames = categoriesToken.Select(t => t.Value<string>()).Where(s => !string.IsNullOrEmpty(s)).ToList();
-                var resolvedCats = ResolveCategories(doc, catNames);
-                if (resolvedCats.Count > 0)
-                {
-                    resolvedCatIds = resolvedCats.Select(c => c.Id).ToList();
-                }
+                requestedCategoryNames = CategoryResolutionGuard.ParseRequestedNames(request["categories"]);
+            }
+            catch (ArgumentException ex)
+            {
+                return CommandResult.Fail(ex.Message);
+            }
+
+            List<ElementId> resolvedCatIds = null;
+            if (requestedCategoryNames != null && requestedCategoryNames.Count > 0)
+            {
+                var resolution = CategoryResolutionGuard.ResolveAll(
+                    requestedCategoryNames,
+                    name => ResolveCategory(doc, name));
+                if (resolution.Unresolved.Count > 0)
+                    return CommandResult.Fail(CategoryResolutionGuard.UnresolvedError(resolution.Unresolved));
+
+                resolvedCatIds = resolution.Resolved
+                    .Select(category => category.Id)
+                    .GroupBy(id => RevitCompat.GetId(id))
+                    .Select(group => group.First())
+                    .ToList();
             }
 
             var viewIdToken = request["view_id"] ?? request["viewId"];
@@ -227,47 +241,28 @@ namespace RvtMcp.Plugin.Handlers
             });
         }
 
-        private static ICollection<Category> ResolveCategories(Document doc, IEnumerable<string> categoryNames)
+        private static Category ResolveCategory(Document doc, string name)
         {
-            var resolved = new List<Category>();
-            var allCategories = doc.Settings.Categories;
-
-            foreach (var name in categoryNames)
+            // BuiltInCategory tokens are stable across Revit UI languages, so resolve
+            // them before localized display names.
+            foreach (BuiltInCategory bic in Enum.GetValues(typeof(BuiltInCategory)))
             {
-                if (string.IsNullOrWhiteSpace(name)) continue;
-
-                Category found = null;
-                foreach (Category cat in allCategories)
+                if (bic.ToString().Equals(name, StringComparison.OrdinalIgnoreCase))
                 {
-                    if (cat.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
-                    {
-                        found = cat;
-                        break;
-                    }
-                }
-
-                if (found == null)
-                {
-                    foreach (BuiltInCategory bic in Enum.GetValues(typeof(BuiltInCategory)))
-                    {
-                        if (bic.ToString().Equals(name, StringComparison.OrdinalIgnoreCase))
-                        {
-                            try
-                            {
-                                found = Category.GetCategory(doc, bic);
-                                if (found != null) break;
-                            }
-                            catch {}
-                        }
-                    }
-                }
-
-                if (found != null)
-                {
-                    resolved.Add(found);
+                    try { return Category.GetCategory(doc, bic); }
+                    catch { return null; }
                 }
             }
-            return resolved;
+
+            foreach (Category category in doc.Settings.Categories)
+            {
+                if (category.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
+                {
+                    return category;
+                }
+            }
+
+            return null;
         }
     }
 }

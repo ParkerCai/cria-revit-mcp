@@ -75,3 +75,7 @@ docs/roadmap-221-tools.md
 
 # Local AI review sessions (prompt + output dumps)
 /runs/
+
+# Local benchmark prompts, responses, reports, and provider adapters
+/benchmarks/.local/
+/benchmarks/adapters.local.json

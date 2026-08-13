@@ -15,21 +15,21 @@ namespace RvtMcp.Server
         public static readonly string[] KnownToolsets =
         {
             "query", "create", "modify", "delete", "view",
-            "export", "annotation", "mep", "schedule", "families", "graphics", "toolbaker", "meta", "lint",
+            "export", "annotation", "mep", "schedule", "families", "graphics", "toolbaker", "meta", "batch", "lint",
             "sheets", "materials", "geometry", "rooms", "links", "parameters", "organization", "workflows",
             "structural", "kei"
         };
 
         public static readonly string[] DefaultOn =
         {
-            "query", "create", "modify", "view", "schedule", "families", "mep", "graphics", "export", "meta", "lint",
+            "query", "create", "modify", "view", "schedule", "families", "mep", "graphics", "export", "meta", "batch", "lint",
             "sheets", "materials", "geometry", "annotation", "rooms", "links", "parameters", "organization", "workflows",
             "structural", "kei"
         };
 
         public static readonly string[] WriteCapable =
         {
-            "create", "modify", "delete", "schedule", "families", "mep", "graphics", "export", "toolbaker",
+            "create", "modify", "delete", "view", "schedule", "families", "mep", "graphics", "export", "toolbaker", "batch",
             "sheets", "materials", "annotation", "rooms", "links", "parameters", "organization", "workflows",
             "structural", "kei"
         };

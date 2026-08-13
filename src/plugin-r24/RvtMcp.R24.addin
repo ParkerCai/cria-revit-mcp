@@ -1,11 +1,11 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <RevitAddIns>
   <AddIn Type="Application">
-    <Name>RvtMcp</Name>
+    <Name>Cria Revit MCP</Name>
     <Assembly>RvtMcp\RvtMcp.Plugin.dll</Assembly>
     <FullClassName>RvtMcp.Plugin.App</FullClassName>
-    <AddInId>{460442af-5b1e-4bf8-9f50-f27047ace447}</AddInId>
-    <VendorId>bimwright</VendorId>
-    <VendorDescription>Revit MCP Gateway</VendorDescription>
+    <AddInId>{c34e4573-49c6-4cf7-a820-7b0dbb874a42}</AddInId>
+    <VendorId>CRIA</VendorId>
+    <VendorDescription>Cria Revit MCP</VendorDescription>
   </AddIn>
 </RevitAddIns>

@@ -25,7 +25,21 @@ Cria is an early independent fork. The v0.1 foundation currently provides:
 
 There is no Cria installer or production release yet. Do not use the inherited upstream installer to install Cria; its package names and paths still belong to the upstream project.
 
-See [the v0.1 architecture](docs/cria-v0.1-architecture.md) and [upstream attribution](UPSTREAM.md).
+See [the dated validation report](docs/testing/validation-results-2026-08-12.md), [the v0.1 architecture](docs/cria-v0.1-architecture.md), [the guarded Revit 2026 live smoke test](docs/testing/revit-2026-live-smoke.md), [the MCP conformance baseline](docs/testing/mcp-2026-07-28-conformance.md), and [upstream attribution](UPSTREAM.md).
+
+### Validation snapshot
+
+| Check | Result |
+|---|---:|
+| .NET suite | 434 passed, 0 failed |
+| Provider-neutral benchmark tests | 9 passed, 0 failed |
+| Server and Revit 2026 Release builds | Passed |
+| Revit 2026 guarded live E2E | Passed: reads, typed authoring, rollback, single Undo, and exact add-in restore |
+| Official MCP suite against production server | Baseline only: 104 passed, 67 failed, 13 not scored |
+| Live Terra/Luna/Gemini/Haiku scores | Not run |
+| Cross-server Revit comparison | Not run |
+
+The live test used a copied local model. One typed batch created a grid, four walls, a floor, and a floor-plan view; a single Ctrl+Z returned the complete element count from 6,644 to the 6,618 baseline and removed all seven recorded IDs. See the validation report for evidence boundaries, defects found, and remaining coverage.
 
 ## Developer quick start
 
@@ -52,7 +66,7 @@ dotnet run --project src/server/RvtMcp.Server.csproj -- --target 2026 --profile 
 
 | Profile | Default behavior |
 |---|---|
-| `read-only` | Removes every write-capable toolset. |
+| `read-only` | Removes every model/file-write-capable toolset, including view authoring and atomic batch execution. |
 | `safe-authoring` | Default. Typed create and modify tools; deletion and arbitrary C# are absent. |
 | `developer` | Adds ToolBaker and `revit_send_code_to_revit`; deletion remains absent unless explicitly requested. |
 
@@ -110,7 +124,7 @@ It is not a universal add-in for every firm. Offices differ. The bet is: start f
 1. Revit open with a model; plugin connected (ribbon).
 2. MCP client starts `cria-revit-mcp` or the locally built server.
 3. Agent uses tools: query view/selection, create grids/rooms, sheets, MEP, export, … Lengths in **mm** at the tool boundary.
-4. Several writes in one undo step: `revit_batch_execute`.
+4. Several audited transaction-only writes in one undo step: `revit_batch_execute`. Its positive allowlist covers core modeling, parameter/type edits, and basic view/sheet/schedule authoring. File, database, UI-selection, deletion, arbitrary C#, baked-tool, and profile-hidden commands are rejected.
 5. Multiple Revits running: `revit_list_available_targets` then `revit_switch_target` with a four-digit year (`2024`, not `R24`).
 
 In the opt-in `developer` profile, when no typed tool fits:
@@ -166,16 +180,16 @@ Counts (without counting personal baked tools):
 
 | Mode | Tools | Notes |
 |------|------:|-------|
-| Default | **220** | All default-on toolsets; **`modify` and `delete` off** |
-| `--toolsets all` | **227** | Adds `modify` + `delete` |
+| Default | **214** | Safe authoring; typed create/modify and batch on, destructive operations and ToolBaker off |
+| `--toolsets all` | **227** | Adds the destructive tool surface and ToolBaker |
 | `all` + adaptive bake | **230** | Adds 3 suggestion-lifecycle tools |
 
 Tool names are MCP-facing as `revit_*`. Wire names between server and plugin stay unprefixed snake_case.
 
 **Default-on toolsets:**  
-`query`, `create`, `view`, `schedule`, `families`, `mep`, `graphics`, `export`, `toolbaker`, `meta`, `lint`, `sheets`, `materials`, `geometry`, `annotation`, `rooms`, `links`, `parameters`, `organization`, `workflows`, `structural`, `kei`
+`query`, `create`, `modify`, `view`, `schedule`, `families`, `mep`, `graphics`, `export`, `meta`, `batch`, `lint`, `sheets`, `materials`, `geometry`, `annotation`, `rooms`, `links`, `parameters`, `organization`, `workflows`, `structural`, `kei`
 
-**Off unless you ask:** `modify`, `delete`  
+**Off unless you ask:** `delete`, `toolbaker`
 Example: `--toolsets query,view,meta` or `--toolsets all`.  
 `--read-only` drops every write-capable toolset.
 
@@ -184,17 +198,18 @@ Example: `--toolsets query,view,meta` or `--toolsets all`.
 | `query` | View, selection, filters, stats, parameters, relationships, worksets, groups/assemblies | on |
 | `create` | Grids, levels, rooms, line/point/surface-based elements, groups | on |
 | `view` | Create views, sheets layout helpers, capture image, crop/scale | on |
-| `meta` | Batch execute, multi-Revit targets, project info, purge unused (MVP), message | on |
+| `meta` | Multi-Revit targets, project info queries, message | on |
+| `batch` | Positive-allowlist atomic command batches; removed entirely by `read-only` | on |
 | `lint` | View naming patterns, firm-profile detect, warnings summary | on |
 | `schedule` | List/create schedules, fields, formulas, data | on |
-| `families` | Load/unload, types, instances, audit, export `.rfa` (project-side) | on |
-| `modify` | Operate/color elements, set parameters, change type, workset assign | off |
-| `delete` | Delete by id | off |
+| `families` | Load, types, instances, audit, export `.rfa` (project-side) | on |
+| `modify` | Operate/color elements, set parameters and project info, change type, workset assign | on |
+| `delete` | Delete, purge, unload, destructive cleanup, and definition removal | off |
 | `annotation` | Tags, text, dimensions, regions, keynotes, checks | on |
 | `export` | PDF/DWG/IFC/NWC helpers, room data, and related export tools | on |
 | `mep` | Systems, connectors, networks, place terminals/fixtures, etc. | on |
 | `graphics` | View filters, overrides, visibility/phase | on |
-| `toolbaker` | send_code, list/run baked tools; suggestion tools only if adaptive on | on |
+| `toolbaker` | send_code, list/run baked tools; suggestion tools only if adaptive on | off |
 | `sheets` | Sheets, titleblocks, revisions, renumber | on |
 | `materials` | Materials, appearance, assignment, takeoff | on |
 | `geometry` | BBox, measure, clash, volume/area, … | on |
@@ -219,7 +234,7 @@ Not a full dump of 200+ schemas — just anchors agents and humans use often:
 | `create` | `revit_create_grid` / `revit_create_level` / `revit_create_room` | Core layout |
 | `create` | `revit_create_point_based_element` | Doors, furniture, … from type id |
 | `view` | `revit_capture_view_image` | Raster capture (path allowlist) |
-| `meta` | `revit_batch_execute` | One `TransactionGroup` for several commands |
+| `batch` | `revit_batch_execute` | One `TransactionGroup` for exposed typed commands |
 | `meta` | `revit_list_available_targets` / `revit_switch_target` | Multi-Revit |
 | `families` | `revit_load_family_from_path` | Load `.rfa` into the project |
 | `toolbaker` | `revit_send_code_to_revit` | Escape hatch (C#) |
@@ -303,7 +318,7 @@ cria-revit-mcp/
 │   ├── shared/            # Handlers, transport, ToolBaker, toast, …
 │   ├── plugin-r22/ … r27/ # One shell per Revit year
 ├── tests/                 # xUnit + golden tool lists
-├── scripts/               # install / uninstall / package
+├── scripts/               # smoke/development helpers; inherited release workflows are unaudited
 ├── docs/                  # roadmap, bake, testing
 ├── AGENTS.md
 └── ARCHITECTURE.md
@@ -337,6 +352,9 @@ Usable, not yet a production release. CI compiles the inherited six-shell matrix
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Processes, transport, DTO rules |
 | [docs/bake.md](docs/bake.md) | Adaptive bake and body privacy |
 | [docs/roadmap.md](docs/roadmap.md) | Near-term hardening and non-goals |
+| [docs/testing/validation-results-2026-08-12.md](docs/testing/validation-results-2026-08-12.md) | Completed tests, live Revit findings, benchmark status, and gaps |
+| [docs/testing/mcp-2026-07-28-conformance.md](docs/testing/mcp-2026-07-28-conformance.md) | Official-suite production-server baseline |
+| [docs/testing/revit-2026-live-smoke.md](docs/testing/revit-2026-live-smoke.md) | Guarded live Revit 2026 procedure |
 | [docs/kei-equipment-import.md](docs/kei-equipment-import.md) | KEI SQLite tools (default-on `kei` toolset) |
 | [CHANGELOG.md](CHANGELOG.md) | Release notes |
 
@@ -347,5 +365,7 @@ Usable, not yet a production release. CI compiles the inherited six-shell matrix
 Apache-2.0 — [LICENSE](LICENSE).
 
 Cria Revit MCP is derived from [bimwright/rvt-mcp](https://github.com/bimwright/rvt-mcp); see [UPSTREAM.md](UPSTREAM.md) for attribution and retained compatibility details.
+
+Cria v0.1 retains several upstream internal paths and therefore does not support a side-by-side upstream RvtMcp installation yet. Use the guarded Revit 2026 smoke workflow for development deployment and exact restoration.
 
 Revit and Autodesk are trademarks of Autodesk, Inc. Cria is independent and is not affiliated with or endorsed by Autodesk or BIMwright.

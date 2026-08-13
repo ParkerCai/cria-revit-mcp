@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Newtonsoft.Json.Linq;
@@ -52,17 +53,34 @@ namespace RvtMcp.Plugin.Handlers
                     switch (elementType)
                     {
                         case "floor":
-                            var floorTypeEl = typeId.HasValue ? doc.GetElement(RevitCompat.ToElementId(typeId.Value)) as FloorType : null;
-                            if (floorTypeEl == null)
+                            FloorType floorTypeEl;
+                            if (typeId.HasValue)
                             {
-                                floorTypeEl = new FilteredElementCollector(doc)
-                                    .OfClass(typeof(FloorType))
-                                    .FirstElement() as FloorType;
+                                floorTypeEl = doc.GetElement(RevitCompat.ToElementId(typeId.Value)) as FloorType;
+                                if (floorTypeEl == null)
+                                {
+                                    tx.RollBack();
+                                    return CommandResult.Fail($"Element {typeId.Value} is not a floor type.");
+                                }
+                                var explicitCandidate = new FloorTypeSelectionCandidate(
+                                    RevitCompat.GetId(floorTypeEl.Id),
+                                    floorTypeEl.Name,
+                                    IsCategory(floorTypeEl, BuiltInCategory.OST_Floors),
+                                    IsFoundationSlab(floorTypeEl));
+                                if (!FloorTypeSelection.IsEligible(explicitCandidate))
+                                {
+                                    tx.RollBack();
+                                    return CommandResult.Fail($"Floor type {typeId.Value} is a structural foundation and cannot be used for an architectural floor.");
+                                }
+                            }
+                            else
+                            {
+                                floorTypeEl = FindDefaultFloorType(doc);
                             }
                             if (floorTypeEl == null)
                             {
                                 tx.RollBack();
-                                return CommandResult.Fail("No floor type loaded in the project.");
+                                return CommandResult.Fail("No non-foundation floor type is loaded in the project.");
                             }
                             // Floor.Create works on both Revit 2022 and 2024 (replaces deprecated NewFloor).
                             created = Floor.Create(doc, new List<CurveLoop> { curveLoop }, floorTypeEl.Id, level.Id);
@@ -116,6 +134,64 @@ namespace RvtMcp.Plugin.Handlers
             }
             foreach (Level lv in levels) return lv;
             return null;
+        }
+
+        private static FloorType FindDefaultFloorType(Document doc)
+        {
+            var floorTypes = new FilteredElementCollector(doc)
+                .OfClass(typeof(FloorType))
+                .Cast<FloorType>()
+                .ToList();
+
+            long? preferredTypeId = null;
+            try
+            {
+                var defaultTypeId = doc.GetDefaultElementTypeId(ElementTypeGroup.FloorType);
+                if (defaultTypeId != null && defaultTypeId != ElementId.InvalidElementId)
+                    preferredTypeId = RevitCompat.GetId(defaultTypeId);
+            }
+            catch
+            {
+                // Some templates do not expose a configured default floor type.
+            }
+
+            var selectedTypeId = FloorTypeSelection.SelectDefault(
+                floorTypes.Select(floorType => new FloorTypeSelectionCandidate(
+                    RevitCompat.GetId(floorType.Id),
+                    floorType.Name,
+                    IsCategory(floorType, BuiltInCategory.OST_Floors),
+                    IsFoundationSlab(floorType))),
+                preferredTypeId);
+
+            return selectedTypeId.HasValue
+                ? floorTypes.FirstOrDefault(floorType => RevitCompat.GetId(floorType.Id) == selectedTypeId.Value)
+                : null;
+        }
+
+        private static bool IsCategory(Element element, BuiltInCategory category)
+        {
+            try
+            {
+                return element.Category != null
+                    && RevitCompat.GetId(element.Category.Id) == (long)category;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static bool IsFoundationSlab(FloorType floorType)
+        {
+            try
+            {
+                return floorType.IsFoundationSlab;
+            }
+            catch
+            {
+                // Unknown floor types are not safe automatic defaults.
+                return true;
+            }
         }
     }
 }

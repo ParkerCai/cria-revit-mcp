@@ -70,9 +70,26 @@ namespace RvtMcp.Plugin.Handlers
                     continue;
                 }
 
+                if (string.Equals(cmdName, "delete_element", StringComparison.Ordinal)
+                    || string.Equals(cmdName, "send_code_to_revit", StringComparison.Ordinal))
+                {
+                    outcome.Results.Add(new { index = i, ok = false, error = DangerousCommandNotSupportedMessage(cmdName) });
+                    outcome.AnyFailed = true;
+                    if (!continueOnError) return outcome;
+                    continue;
+                }
+
                 if (isBakedCommand != null && isBakedCommand(cmdName))
                 {
                     outcome.Results.Add(new { index = i, ok = false, error = BakedCommandNotSupportedMessage(cmdName) });
+                    outcome.AnyFailed = true;
+                    if (!continueOnError) return outcome;
+                    continue;
+                }
+
+                if (!AtomicBatchCommandCatalog.IsAllowed(cmdName))
+                {
+                    outcome.Results.Add(new { index = i, ok = false, error = NonAtomicCommandNotSupportedMessage(cmdName) });
                     outcome.AnyFailed = true;
                     if (!continueOnError) return outcome;
                     continue;
@@ -134,6 +151,12 @@ namespace RvtMcp.Plugin.Handlers
 
         public static string RunBakedToolNotSupportedMessage() =>
             "run_baked_tool cannot be invoked through batch_execute; call run_baked_tool directly.";
+
+        public static string DangerousCommandNotSupportedMessage(string name) =>
+            $"Command '{name}' cannot be run through batch_execute. Use its direct MCP tool under an explicitly enabled profile.";
+
+        public static string NonAtomicCommandNotSupportedMessage(string name) =>
+            $"Command '{name}' is not in the audited transaction-only batch allowlist. Call it separately.";
 
         private static bool TryGetPartialFailureCount(object data, out int failedCount)
         {

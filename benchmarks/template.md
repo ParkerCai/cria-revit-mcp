@@ -4,22 +4,28 @@ Use this runbook for every model. Do not substitute provider-specific tasks, too
 
 ## 1. Record the repository state
 
-From the repository root, record:
+The runner records the full commit SHA, dirty worktree state, and server package version in `manifest.json`. Before a publishable run, inspect the worktree intentionally:
 
 ```powershell
-git rev-parse --short HEAD
+git status --short
+git rev-parse HEAD
 ```
 
-Read the version from the `<Version>` element in `src/server/RvtMcp.Server.csproj`. Record the active Cria tool profile and the tool count.
+The v1 suite uses the `safe-authoring` profile only.
 
 ## 2. Load the tool surface
 
-Prefer a current `tools/list` response from a local Cria server. Do not connect the server to a live Revit project for this benchmark.
+Capture the live tool catalog and generate the frozen provider-neutral payload with:
 
-For an offline run, use:
+```powershell
+cd benchmarks
+bun run benchmark.ts catalog --url http://127.0.0.1:8200/ --out .local\safe-catalog.json
+bun run benchmark.ts prompt --model <exact-model-id> --catalog .local\safe-catalog.json --out .local\prompt.json
+```
 
-- schemas from `tests/RvtMcp.Tests/Golden/tools-list.json`; and
-- full tool descriptions from the `[McpServerTool]` methods in `src/server/Program.cs`.
+The catalog command calls stateless `server/discover` and `tools/list`, rejects session IDs, verifies the Cria server identity and `2026-07-28`, and records a catalog SHA-256. The prompt embeds that catalog provenance.
+
+If a live server is unavailable, `catalog` and `prompt` can use the offline snapshot for development. `score` and `run` do not accept offline catalogs.
 
 Every model in the comparison must receive the same tool names, descriptions, schemas, and safety annotations.
 
@@ -35,7 +41,7 @@ Supply the complete tool surface, followed by this prompt and the contents of `b
 
 > You are evaluating the Cria Revit MCP tool surface. Plan tool calls for the synthetic requests below. Do not execute any tool and do not connect to Revit. For each case, choose the smallest correct tool or ordered tool chain and provide the arguments you would send. Use only tools from the supplied surface. Preserve numeric units and represent values using the schema's types. When an argument depends on an earlier call result, use a clear placeholder such as `<element IDs returned by call 1>`. Return valid JSON only, using the output shape below. Use English for any notes.
 
-Required output shape:
+Required response shape: return exactly one result for every supplied case ID. `calls` is an ordered array with zero or more entries. Use an empty array when no supplied tool should be called.
 
 ```json
 {
@@ -47,21 +53,26 @@ Required output shape:
   },
   "results": [
     {
-      "id": "Q1",
-      "calls": [
-        {
-          "tool": "revit_tool_name",
-          "arguments": {}
-        }
-      ]
+      "id": "<one supplied case id>",
+      "calls": []
     }
   ]
 }
 ```
 
+When calls are required, each entry has shape `{"tool":"revit_tool_name","arguments":{}}`. Do not return the angle-bracket placeholder literally.
+
 Reject and rerun a response that is not valid JSON or omits a case. Record reruns in the report.
 
 ## 5. Score the response
+
+Prefer the repeatable scorer:
+
+```powershell
+bun run benchmark.ts score --model <exact-model-id> --catalog .local\safe-catalog.json --prompt .local\prompt.json --response <response-json>
+```
+
+The scorer verifies that the catalog is a live capture, its hashes and safe profile are intact, the prompt matches the catalog/cases/registry contract, and response provider/model/reasoning match `models.json`.
 
 Use the expectations in `benchmarks/cases.json`.
 
@@ -78,21 +89,29 @@ Report tool-selection and argument-accuracy percentages separately. The overall 
 
 Find the most recent run with the same suite version, exact model ID, reasoning setting, and tool profile. If none exists, label the run as a new baseline. Never calculate a regression delta against a different model.
 
-## 7. Write the run report
+## 7. Review the evidence bundle
 
-Write `benchmarks/runs/<YYYY-MM-DD>-<commit>-<model-id>.md`, replacing characters that are invalid in filenames.
+Each successful score writes `.local/runs/<run-id>/catalog.json`, `cases.json`, `prompt.json`, `response.json`, `report.md`, and `manifest.json`. The manifest contains the full commit, dirty state, version, exact model tuple, scores, and hashes for every scored input and output.
+
+Review `.local/runs/<run-id>/report.md`. Copy only that reviewed report to `benchmarks/runs/<YYYY-MM-DD>-<commit>-<model-id>.md` when publication is intended.
 
 ```markdown
 # Tool-routing benchmark run — <date>
 
 - Suite: cria-tool-routing-v1
 - Commit: <commit>
+- Dirty worktree: Yes or No
 - Version: <version>
 - Provider: <provider>
 - Model: <exact model ID>
 - Reasoning: <setting>
 - Tool profile: <profile>
 - Tool count: <count>
+- Catalog source: live-tools-list
+- Catalog SHA-256: <hash>
+- Cases SHA-256: <hash>
+- Prompt SHA-256: <hash>
+- Response SHA-256: <hash>
 - Baseline: <path or New baseline>
 - Reruns: <count and reason>
 

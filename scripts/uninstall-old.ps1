@@ -1,10 +1,14 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-  Remove legacy Bimwright.Rvt v0.3.0-and-earlier plugin installation before upgrading to RvtMcp v0.4.0+.
+  Disabled inherited legacy cleanup. Do not use this as a Cria workflow.
 
 .DESCRIPTION
-  Cleans up addin folders and manifests installed by the legacy `Bimwright` plugin layout.
+  Retained only for upstream history and migration reference. It exits before
+  reading the registry or deleting any add-in files. Cria does not have an
+  audited installer, migration, or uninstall workflow yet.
+
+  The inherited implementation cleaned add-in folders and manifests installed by the legacy `Bimwright` plugin layout.
   Preserves user data (baked tools, journal, firm profiles, debug logs) in `%LOCALAPPDATA%\Bimwright\`
   for migration on next launch of v0.4.0+.
 
@@ -24,6 +28,8 @@
 param(
     [int[]]$Years
 )
+
+throw 'Cria legacy cleanup disabled: scripts/uninstall-old.ps1 is inherited upstream code and is not an audited Cria workflow.'
 
 $ErrorActionPreference = 'Stop'
 

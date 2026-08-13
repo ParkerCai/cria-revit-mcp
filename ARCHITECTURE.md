@@ -46,7 +46,7 @@ Each file is a self-describing JSON object:
 }
 ```
 
-Server scans these on connect, verifies the PID is alive, and auto-deletes orphan files. Installer-generated MCP config uses one auto-detect `rvt-mcp` entry; the agent can call `revit_list_available_targets` to discover which years are running, then `revit_switch_target` (or explicit `--target 2024` at server start) to pin a specific version when multiple Revits run concurrently. **Versions are 4-digit calendar years (`2024`), not R-codes (`R24`) — v0.5+ rejects R-codes with an educational error pointing back to `revit_list_available_targets`.**
+Server scans these on connect, verifies the PID is alive, and auto-deletes orphan files. A local MCP config can use one auto-detect Cria entry; the agent can call `revit_list_available_targets` to discover which years are running, then `revit_switch_target` (or explicit `--target 2024` at server start) to pin a specific version when multiple Revits run concurrently. **Versions are 4-digit calendar years (`2024`), not R-codes (`R24`) — legacy R-codes are rejected with an educational error pointing back to `revit_list_available_targets`.** The inherited installer that previously generated client config is disabled for Cria v0.1.
 
 ## Multi-version strategy
 
@@ -93,11 +93,11 @@ Timeout: 30s per request on the server side. Listener cancels pending requests o
 
 ## Progressive disclosure (A3)
 
-Tools are grouped into 10 toolset classes (`QueryTools`, `CreateTools`, `ViewTools`, …). `Program.RegisterToolsets` only calls `.WithTools<T>()` for enabled toolsets, so disabled tools never appear in `tools/list` — the model can't accidentally call what it can't see. `ToolsetFilter.Resolve` handles defaults (`query+create+view+meta`), the `"all"` shortcut, unknown-token tolerance, and `--read-only` post-processing (strips `create`/`modify`/`delete` after expansion).
+Tools are grouped into 25 domain toolsets (`query`, `create`, `view`, `schedule`, and others). `Program.RegisterToolsets` only calls `.WithTools<T>()` for enabled toolsets, so disabled tools never appear in `tools/list`. `ToolsetFilter.Resolve` applies the default `safe-authoring` surface, the `"all"` shortcut, explicit toolset overrides, and `read-only` removal of every toolset classified as write-capable. The exact default and write-capable sets live in `src/server/ToolsetFilter.cs` and are pinned by tests.
 
 ## Batch execution (A6)
 
-`batch_execute` is the one MCP tool that forwards a list. Plugin-side, `BatchExecuteHandler` opens a `TransactionGroup` and dispatches each sub-command through the normal handler path (so each handler gets its own inner `Transaction` — Revit forbids nested transactions, but a group around them is allowed). On success it calls `Assimilate()` to merge everything into one undo step. On failure it calls `RollBack()` unless `continueOnError=true`. Iteration logic is factored into `BatchExecutor.Run` so it's unit-testable without a live Revit document.
+`batch_execute` is the one MCP tool that forwards a list. Before forwarding, the server requires every sub-command to be in the audited transaction-only allowlist and exposed by the active profile; nested batch, deletion, baked tools, and arbitrary C# are always rejected. Plugin-side, `BatchExecuteHandler` opens a `TransactionGroup` and dispatches each accepted sub-command through the normal handler path (so each handler gets its own inner `Transaction` — Revit forbids nested transactions, but a group around them is allowed). On success it calls `Assimilate()` to merge everything into one undo step. On failure it calls `RollBack()` unless `continueOnError=true`. Iteration logic is factored into `BatchExecutor.Run` so it is unit-testable without a live Revit document.
 
 ## ToolBaker pipeline
 
@@ -115,7 +115,7 @@ Loaded baked IRevitCommand
 run_baked_tool(name)
 ```
 
-Baked tools persist across Revit restarts in the current local user registry and are executed only through `list_baked_tools` + `run_baked_tool`; they are not exposed as native MCP tools. SQLite-backed metadata, stronger isolation, and signed-bake verification are planned adaptive-bake hardening work. `send_code_to_revit` is the unsandboxed cousin — it executes arbitrary C# against the running Revit session and is runtime-gated by plugin-visible adaptive-bake opt-in from the Revit process environment or `%LOCALAPPDATA%\RvtMcp\rvtmcp.config.json`.
+Baked tools persist across Revit restarts in the current local user registry and are executed only through `list_baked_tools` + `run_baked_tool`; they are not exposed as native MCP tools. SQLite-backed metadata, stronger isolation, and signed-bake verification are planned adaptive-bake hardening work. `send_code_to_revit` is the unsandboxed cousin: it executes arbitrary C# against the running Revit session. Cria hides that MCP surface in the default `safe-authoring` profile and exposes it through the explicit `developer` profile or advanced toolset overrides. The plugin retains authenticated wire-command compatibility, so the MCP profile is exposure control rather than an in-process sandbox. Adaptive suggestions and code-body persistence are separate opt-ins.
 
 ## Config precedence (A9)
 
@@ -142,5 +142,5 @@ Hand-rolled parser, no `System.CommandLine` dep. Each field is nullable so "not 
 ## Why this shape
 
 - **Full C#, one stack.** No TypeScript bridge, no Python helper, no IPC format hop. One language across server, plugin, handlers, ToolBaker, tests.
-- **Process split, not thread split.** The server lives outside Revit so it can start before Revit and outlive a plugin crash. Users update the server via `dotnet tool update -g` without touching their add-in.
+- **Process split, not thread split.** The server lives outside Revit so it can start before Revit and outlive a plugin crash. Cria v0.1 builds the server from source; no audited installer or published global-tool package exists yet.
 - **Source glob, not shared DLL.** Each plugin shell compiles `src/shared/**` directly so version-specific `#if` branches produce distinct binaries — no runtime version sniffing, no reflection fallback.

@@ -59,6 +59,7 @@ namespace RvtMcp.Plugin.Handlers
             return CommandResult.Ok(new
             {
                 projectName = doc.Title,
+                documentPath = doc.PathName,
                 elementsCounted = processed,
                 totalCategories = categories.Length,
                 truncated,

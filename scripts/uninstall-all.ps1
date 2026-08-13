@@ -1,9 +1,13 @@
 <#
 .SYNOPSIS
-  Remove every RvtMcp artifact from this machine (plugin + server + host configs + discovery + logs).
+  Disabled inherited upstream uninstaller. Do not use this as a Cria workflow.
 
 .DESCRIPTION
-  Runs a 4-step sweep:
+  Retained only for upstream history and migration reference. It exits before
+  reading, deleting, uninstalling, or changing MCP client configuration. Cria
+  does not have an audited installer or uninstaller yet.
+
+  The inherited implementation previously ran a 4-step sweep:
     1. Plugin + .addin for every detected Revit year (delegates to install.ps1 -Uninstall).
     2. Legacy .NET global tool RvtMcp.Server, if present.
     3. MCP host config entries matching rvt-mcp or legacy bimwright-rvt-* in:
@@ -40,6 +44,8 @@ param(
     [switch]$Yes,
     [switch]$KeepLogs
 )
+
+throw 'Cria uninstaller disabled: scripts/uninstall-all.ps1 is inherited upstream code and is not an audited Cria workflow.'
 
 $ErrorActionPreference = 'Stop'
 

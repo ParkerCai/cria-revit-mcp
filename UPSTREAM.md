@@ -12,6 +12,10 @@ Cria's initial changes include:
 - Safe operating profiles with ToolBaker disabled by default.
 - Protocol and profile integration tests.
 
-The v0.1 code intentionally retains `RvtMcp.*` internal namespaces, Revit add-in assembly names, named-pipe framing, and `%LOCALAPPDATA%\RvtMcp` discovery compatibility. This reduces migration risk and allows protocol work to be validated independently of a future installer and storage migration.
+The v0.1 code intentionally retains `RvtMcp.*` internal namespaces, Revit add-in assembly names and paths, named-pipe framing, legacy environment-variable names, and `%LOCALAPPDATA%\RvtMcp` discovery compatibility. This reduces migration risk and allows protocol work to be validated independently of a future installer and storage migration.
+
+Because those compatibility paths are shared, Cria v0.1 and upstream RvtMcp are not supported side by side in the same Revit installation or Windows user profile. The guarded Revit 2026 smoke harness temporarily swaps the payload and restores the exact prior files; a future audited installer will use independent paths.
+
+The product-facing Revit add-in identity is independent: every version-specific manifest uses the name `Cria Revit MCP`, vendor ID `CRIA`, and Cria add-in ID `{c34e4573-49c6-4cf7-a820-7b0dbb874a42}`. The shared ID is deliberate because only one version-specific manifest is loaded by a given Revit host. It is distinct from all inherited upstream add-in IDs.
 
 Cria is not affiliated with or endorsed by BIMwright or Autodesk.

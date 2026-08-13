@@ -1,0 +1,10 @@
+{
+  "name": "cria-revit-mcp-benchmarks",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "catalog": "bun run benchmark.ts catalog",
+    "prompt": "bun run benchmark.ts prompt",
+    "test": "bun test"
+  }
+}

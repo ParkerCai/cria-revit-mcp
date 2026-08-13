@@ -15,7 +15,7 @@ namespace RvtMcp.Tests
         {
             var set = ToolsetFilter.Resolve(null);
             Assert.Equal(
-                new[] { "annotation", "create", "export", "families", "geometry", "graphics", "kei", "links", "lint", "materials", "mep", "meta", "modify", "organization", "parameters", "query", "rooms", "schedule", "sheets", "structural", "view", "workflows" },
+                new[] { "annotation", "batch", "create", "export", "families", "geometry", "graphics", "kei", "links", "lint", "materials", "mep", "meta", "modify", "organization", "parameters", "query", "rooms", "schedule", "sheets", "structural", "view", "workflows" },
                 set.OrderBy(s => s).ToArray());
         }
 
@@ -24,7 +24,7 @@ namespace RvtMcp.Tests
         {
             var set = ToolsetFilter.Resolve(new RvtMcpConfig { Toolsets = new List<string>() });
             Assert.Equal(
-                new[] { "annotation", "create", "export", "families", "geometry", "graphics", "kei", "links", "lint", "materials", "mep", "meta", "modify", "organization", "parameters", "query", "rooms", "schedule", "sheets", "structural", "view", "workflows" },
+                new[] { "annotation", "batch", "create", "export", "families", "geometry", "graphics", "kei", "links", "lint", "materials", "mep", "meta", "modify", "organization", "parameters", "query", "rooms", "schedule", "sheets", "structural", "view", "workflows" },
                 set.OrderBy(s => s).ToArray());
         }
 
@@ -46,6 +46,7 @@ namespace RvtMcp.Tests
 
             Assert.Equal(ToolsetFilter.DefaultOn.OrderBy(s => s), set.OrderBy(s => s));
             Assert.DoesNotContain("toolbaker", set);
+            Assert.Contains("batch", set);
         }
 
         // --- Explicit toolsets --------------------------------------------
@@ -128,9 +129,10 @@ namespace RvtMcp.Tests
             Assert.DoesNotContain("parameters", set);
             Assert.DoesNotContain("organization", set);
             Assert.DoesNotContain("workflows", set);
+            Assert.DoesNotContain("batch", set);
             // Non-write toolsets survive
             Assert.Contains("query", set);
-            Assert.Contains("view", set);
+            Assert.DoesNotContain("view", set);
             Assert.Contains("geometry", set);
             Assert.DoesNotContain("export", set);
         }
@@ -139,9 +141,9 @@ namespace RvtMcp.Tests
         public void Resolve_ReadOnlyWithDefaults_LeavesOnlyReadSafeDefaults()
         {
             var set = ToolsetFilter.Resolve(new RvtMcpConfig { ReadOnly = true });
-            // Default = query+create+view+schedule+toolbaker+meta+lint+sheets+materials+geometry. ReadOnly strips write-capable sets.
+            // ReadOnly strips every default write-capable set, including atomic batch execution.
             Assert.Equal(
-                new[] { "geometry", "lint", "meta", "query", "view" },
+                new[] { "geometry", "lint", "meta", "query" },
                 set.OrderBy(s => s).ToArray());
         }
 
@@ -194,9 +196,9 @@ namespace RvtMcp.Tests
         // --- Invariants ---------------------------------------------------
 
         [Fact]
-        public void KnownToolsets_Contains24Entries()
+        public void KnownToolsets_Contains25Entries()
         {
-            Assert.Equal(24, ToolsetFilter.KnownToolsets.Length);
+            Assert.Equal(25, ToolsetFilter.KnownToolsets.Length);
         }
 
         [Fact]
